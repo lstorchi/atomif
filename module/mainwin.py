@@ -10,15 +10,21 @@ class main_window(QtWidgets.QMainWindow):
 
     def __init__(self):
 
+        self.__firstmol2file__ = ""
+        self.__secondmol2file__ = ""
+
+        self.__firsttxtfile__ = ""
+        self.__secondtxtfile__ = ""
+
         QtWidgets.QMainWindow.__init__(self) 
         self.resize(640, 480) 
         self.setWindowTitle('ATOMIF')
         self.statusBar().showMessage('ATOMIF started') 
 
-        ofile = QtWidgets.QAction(QtGui.QIcon("icons/open.png"), "Open MOL2", self)
+        ofile = QtWidgets.QAction(QtGui.QIcon("icons/open.png"), "Open MOL@ and Weight files", self)
         ofile.setShortcut("Ctrl+O")
-        ofile.setStatusTip("Open file")
-        ofile.triggered.connect(self.openfilemol2)
+        ofile.setStatusTip("Open files")
+        ofile.triggered.connect(self.openfiles)
 
         sep = QtWidgets.QAction(self)
         sep.setSeparator(True)
@@ -53,11 +59,21 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__options_dialog_files__ = options.optiondialog_files(self)
 
-    def openfilemol2(self):
+    def openfiles(self):
 
         self.__options_dialog_files__.setWindowTitle("Specify filenames")
 
         self.__options_dialog_files__.exec_()
+
+        self.__firstmol2file__ = \
+            self.__options_dialog_files__.firstmol2file_line.text()
+        self.__secondmol2file__ = \
+            self.__options_dialog_files__.secondmol2file_line.text()
+
+        self.__firsttxtfile__ = \
+            self.__options_dialog_files__.firstweigfile_line.text()
+        self.__secondtxtfile__ = \
+            self.__options_dialog_files__.secondweigfile_line.text()
 
 
         
