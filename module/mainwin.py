@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 import os
 import options
+import runners
 import atomiffileio
 
 class main_window(QtWidgets.QMainWindow):
@@ -45,6 +46,11 @@ class main_window(QtWidgets.QMainWindow):
         config.setStatusTip("Configure")
         config.triggered.connect(self.configure)
 
+        runcu = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run Coulomb Carboi Index", self)
+        runcu.setShortcut("Ctrl+R")
+        runcu.setStatusTip("Run the Carbo index using the Coulomb's law ")
+        runcu.triggered.connect(self.runcu)      
+
         self.statusBar().show()
 
         menubar = self.menuBar()
@@ -55,6 +61,9 @@ class main_window(QtWidgets.QMainWindow):
 
         edit = menubar.addMenu('&Edit')
         edit.addAction(config)
+
+        run = menubar.addMenu('&Compute')
+        run.addAction(runcu)
 
         help = menubar.addMenu('&Help')
 
@@ -73,12 +82,27 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__options_dialog_files__ = options.optiondialog_files(self)
         self.__configure_dialog__ = options.configure(self)
+        self.__runcu_dialog__ = runners.runcudialog(self)
 
         self.__workdir__ = self.__configure_dialog__.workdir_line.text()
         self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
         self.__fixpdbin__ = self.__configure_dialog__.fixpdbin_line.text()
         self.__apbsbin__ = self.__configure_dialog__.apbsbin_line.text()
         self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
+
+    def runcu (self):
+
+        self.__runcu_dialog__.setWindowTitle("Run Coulomb Carbo Index")
+        
+        self.__runcu_dialog__.exec()
+
+        stepval = float(self.__runcu_dialog__.stepval_line.text())
+        deltaval = float(self.__runcu_dialog__.deltaval_line.text())
+
+        ddieletric = self.__runcu_dialog__.ddielcheckbox.isChecked()
+
+        #print(stepval, deltaval, ddieletric)
+
 
     def configure(self):
 
