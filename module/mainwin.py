@@ -40,6 +40,11 @@ class main_window(QtWidgets.QMainWindow):
         quit.setStatusTip("Quit application")
         quit.triggered.connect(self.close)
 
+        config = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Config", self)
+        config.setShortcut("Ctrl+I")
+        config.setStatusTip("Configure")
+        config.triggered.connect(self.configure)
+
         self.statusBar().show()
 
         menubar = self.menuBar()
@@ -47,6 +52,9 @@ class main_window(QtWidgets.QMainWindow):
         file = menubar.addMenu('&File')
         file.addAction(ofile)
         file.addAction(quit)
+
+        edit = menubar.addMenu('&Edit')
+        edit.addAction(config)
 
         help = menubar.addMenu('&Help')
 
@@ -64,6 +72,20 @@ class main_window(QtWidgets.QMainWindow):
         self.setCentralWidget(maindialog)
 
         self.__options_dialog_files__ = options.optiondialog_files(self)
+        self.__configure_dialog__ = options.configure(self)
+
+        self.__workdir__ = self.__configure_dialog__.workdir_line.text()
+        self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
+        self.__fixpdbin__ = self.__configure_dialog__.fixpdbin_line.text()
+        self.__apbsbin__ = self.__configure_dialog__.apbsbin_line.text()
+        self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
+
+    def configure(self):
+
+        self.__configure_dialog__.setWindowTitle("Configure")
+
+        self.__configure_dialog__.exec()
+
 
     def openfiles(self):
 
@@ -83,10 +105,14 @@ class main_window(QtWidgets.QMainWindow):
 
         for fn in [self.__firstmol2file__ , self.__secondmol2file__, \
             self.__firsttxtfile__ , self.__secondtxtfile__ ]:
+            if fn == "":
+                return
+
             if not os.path.isfile(fn):
                 QtWidgets.QMessageBox.critical( self, \
                     "ERROR", \
                         "File " + fn + " does not exist")
+                return 
 
         try:
             self.__firstmolsset__ = atomiffileio.mol2atomextractor ( \
@@ -99,6 +125,7 @@ class main_window(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical( self, \
                 "ERROR", \
                     "error in reading mol2 files " + str(msg))
+            return 
 
         try:
             self.__firstweightsset__ = atomiffileio.extractweight ( \
@@ -111,7 +138,7 @@ class main_window(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical( self, \
                 "ERROR", \
                     "error in reading txt files " + str(msg))
-
+            return
         
         if (len(self.__firstmolsset__) != len(self.__firstweightsset__)) or \
             (len(self.__secondeightsset__) != len(self.__secondmolsset__)):
@@ -129,7 +156,7 @@ class main_window(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical( self, \
                 "ERROR", \
                     "Error mismatch between number of weights and number of molecules")
-
+            return
 
         
 
