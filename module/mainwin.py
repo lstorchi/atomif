@@ -86,6 +86,46 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__configure_dialog__.exec()
 
+        self.__workdir__ = self.__configure_dialog__.workdir_line.text()
+        if not (os.path.isdir(self.__workdir__ )):
+            QtWidgets.QMessageBox.critical( self, \
+                    "ERROR", \
+                        "Dir " + self.__workdir__  + \
+                            " is not a directotory restoring the default value ./ ")
+            self.__workdir__ = "./"
+
+        self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
+        if not (os.path.isfile(self.__gridbin__ )):
+            QtWidgets.QMessageBox.critical( self, \
+                    "ERROR", \
+                        "File " + self.__gridbin__  + \
+                            " does not exist ")
+            self.__gridbin__ = ""
+
+        self.__fixpdbin__ = self.__configure_dialog__.fixpdbin_line.text()
+        if not (os.path.isfile(self.__fixpdbin__ )):
+            QtWidgets.QMessageBox.critical( self, \
+                    "ERROR", \
+                        "File " + self.__fixpdbin__  + \
+                            " does not exist ")
+            self.__fixpdbin__ = ""
+
+        self.__apbsbin__ = self.__configure_dialog__.apbsbin_line.text()
+        if not (os.path.isfile(self.__apbsbin__ )):
+            QtWidgets.QMessageBox.critical( self, \
+                    "ERROR", \
+                        "File " + self.__apbsbin__  + \
+                            " does not exist ")
+            self.__apbsbin__ = ""
+
+        self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
+        if not (os.path.isfile(self.__obabelbin__ )):
+            QtWidgets.QMessageBox.critical( self, \
+                    "ERROR", \
+                        "File " + self.__obabelbin__ + \
+                            " does not exist ")
+            self.__obabelbin__ = ""
+
 
     def openfiles(self):
 
