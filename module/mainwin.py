@@ -152,7 +152,7 @@ class main_window(QtWidgets.QMainWindow):
             progress_dialog.setValue(0)
             
             if (cfields2 != None):
-                basename = os.path.splitext(self.__secondmmol2file__)[0]
+                basename = os.path.splitext(self.__secondmol2file__)[0]
                 basename  = basename.split("/")[-1]
             
                 gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
