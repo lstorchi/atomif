@@ -111,11 +111,55 @@ class main_window(QtWidgets.QMainWindow):
         progress_dialog.show()
         progress_dialog.setValue(0)
 
-        cfields = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
+        if (progress_dialog.wasCanceled()):
+          return  
+
+        cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
             1.0, False, ddieletric, progress_dialog)
+
+        gmean1 = None 
+        allfields1 = None
+
+        progress_dialog.labelText("Computing DXes")
+        progress_dialog.setValue(0)
+
+        if (cfields1 != None):
+            basename = os.path.splitext(self.__firstmol2file__)[0]
+            basename  = basename.split("/")[-1]
+
+            gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                     cfields1, self.__secondeightsset__ , stepval, ddieletric, \
+                         exportdx)
 
         progress_dialog.setValue(100)
 
+        gmean2 = None 
+        allfields2 = None
+
+        if (cfields1 != None):
+            progress_dialog.setLabelText("Computing Coulomb molecule " + \
+                self.__secondmol2file__) 
+            
+            progress_dialog.setValue(0)
+            
+            if (progress_dialog.wasCanceled()):
+              return  
+            
+            cfields2 = fields.get_cfields(self.__secondmolsset__, stepval, deltaval, \
+                1.0, False, ddieletric, progress_dialog)
+
+            progress_dialog.setLabelText("Computing DXes")
+            progress_dialog.setValue(0)
+            
+            if (cfields2 != None):
+                basename = os.path.splitext(self.__secondmmol2file__)[0]
+                basename  = basename.split("/")[-1]
+            
+                gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                        cfields2, self.__secondeightsset__ , stepval, ddieletric, \
+                            exportdx)
+            
+            progress_dialog.setValue(100)
 
     def configure(self):
 
