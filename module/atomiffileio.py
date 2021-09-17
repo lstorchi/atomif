@@ -104,15 +104,20 @@ def mol2atomextractor (file=None, readresname= False):
 def extractweight (file):
   weigs = []
 
+  sum = 0.0
+
   with open(file) as fp:
     for line in fp:
       try:
         float(line)
       except ValueError:
         raise Exception("Error "+line+ " is not a float ")
-      
-      weigs.append(float(line))
 
-  return weigs
+      val = float(line)
+      
+      weigs.append(val)
+      sum += val
+
+  return [x / sum for x in weigs]
 
 ###############################################################

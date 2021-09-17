@@ -1,10 +1,11 @@
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets, QtCore
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 
 import os
+import fields
 import options
 import runners
 import atomiffileio
@@ -98,10 +99,22 @@ class main_window(QtWidgets.QMainWindow):
 
         stepval = float(self.__runcu_dialog__.stepval_line.text())
         deltaval = float(self.__runcu_dialog__.deltaval_line.text())
-
         ddieletric = self.__runcu_dialog__.ddielcheckbox.isChecked()
+        exportdx = self.__runcu_dialog__.exportdxcheckbox.isChecked()
 
         #print(stepval, deltaval, ddieletric)
+
+        progress_dialog = QtWidgets.QProgressDialog ("Computing Coulomb molecule " + self.__firstmol2file__, \
+            "Abort", 0, 100, self)
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+
+        progress_dialog.show()
+        progress_dialog.setValue(0)
+
+        cfields = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
+            1.0, False, ddieletric, progress_dialog)
+
+        progress_dialog.setValue(100)
 
 
     def configure(self):

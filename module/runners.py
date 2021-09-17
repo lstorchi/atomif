@@ -22,6 +22,8 @@ class runcudialog(QtWidgets.QDialog):
 
         self.ddielcheckbox = QtWidgets.QCheckBox("Enable Dielectric damping ", self)
 
+        self.exportdxcheckbox = QtWidgets.QCheckBox("Export DX files ", self)
+
         self.grid = QtWidgets.QGridLayout(self)
         self.grid.addWidget(stepval_label, 0, 0)
         self.grid.addWidget(self.stepval_line, 0, 1)
@@ -30,8 +32,9 @@ class runcudialog(QtWidgets.QDialog):
         self.grid.addWidget(self.deltaval_line, 1, 1)
 
         self.grid.addWidget(self.ddielcheckbox, 2, 0)
+        self.grid.addWidget(self.exportdxcheckbox, 3, 0)
 
-        self.grid.addWidget(self.okbutton, 3, 2)
+        self.grid.addWidget(self.okbutton, 4, 2)
 
     def run(self):
 
