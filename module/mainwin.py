@@ -120,7 +120,7 @@ class main_window(QtWidgets.QMainWindow):
         gmean1 = None 
         allfields1 = None
 
-        progress_dialog.labelText("Computing DXes")
+        progress_dialog.setLabelText("Computing DXes")
         progress_dialog.setValue(0)
 
         if (cfields1 != None):
