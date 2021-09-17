@@ -93,7 +93,8 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
   for molidx in range(len(mols)):
 
     if progress != None:
-        progress.setLabelText("Processing Molecule " + str(molidx + 1))
+        progress.setLabelText("Processing Molecule " + str(molidx + 1) + \
+          " of " + str(len(mols)))
         progress.setValue(0)
         #progress.setValue(15+(84*((molidx+1)/len(mols))))
         if (progress.wasCanceled()):
@@ -143,27 +144,29 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
 def exporttodx (basename, cfields, weights, stepvalue, \
   ddielectric, writefiles = False, tofitw = None, interpolate = ""):
 
+    print(len(cfields))
+    
     mep = numpy.zeros(cfields[0][1].shape)
     coords = cfields[0][0]
     for i, field in enumerate(cfields):
       ep = field[1]
       mep += ep * weights[i]
-
+    
     mep = mep/float(len(cfields))
     gmean = Grid(mep, origin=coords[0], \
       delta=[stepvalue, stepvalue, stepvalue])
-
+    
     if writefiles:
       name = basename + "_coulomb_mean.dx"
       if ddielectric:
         name = basename + "_coulomb_ddieletric_mean.dx"
       gmean.export(name)
-
+    
     allfields = []
-
+    
     if interpolate != "":
       tofitw = Grid(interpolate)
-
+    
     for i, field in enumerate(cfields):
       coords = field[0]
       ep = field[1]
@@ -173,8 +176,8 @@ def exporttodx (basename, cfields, weights, stepvalue, \
       name = basename + "_%d_coulomb.dx"%(i+1)
       if ddielectric:
         name = basename + "_%d_coulomb_ddieletric.dx"%(i+1)
-      #print (name + " %8.3f"%(weights[i]), file=sys.stderr)
-
+      print (name + " %8.3f"%(weights[i]), file=sys.stderr)
+    
       #name = basename + "_coulomb_" + str(i+1) + ".dx"
       #if args.ddielectric:
       #  name = basename + "_coulomb_ddieletric_" + str(i+1) + ".dx"
@@ -188,7 +191,7 @@ def exporttodx (basename, cfields, weights, stepvalue, \
         allfields.append(g)
         if writefiles:
           g.export(name)
-
-      return gmean, allfields
+          
+    return gmean, allfields
 
 ###############################################################
