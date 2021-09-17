@@ -176,7 +176,7 @@ def exporttodx (basename, cfields, weights, stepvalue, \
       name = basename + "_%d_coulomb.dx"%(i+1)
       if ddielectric:
         name = basename + "_%d_coulomb_ddieletric.dx"%(i+1)
-      print (name + " %8.3f"%(weights[i]), file=sys.stderr)
+      #print (name + " %8.3f"%(weights[i]), file=sys.stderr)
     
       #name = basename + "_coulomb_" + str(i+1) + ".dx"
       #if args.ddielectric:

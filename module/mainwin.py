@@ -124,6 +124,7 @@ class main_window(QtWidgets.QMainWindow):
         progress_dialog.setValue(0)
         progress_dialog.setAutoClose(False)
         progress_dialog.setAutoReset(True)
+        progress_dialog.setMinimumDuration(0)
 
         if (cfields1 != None):
             basename = os.path.splitext(self.__firstmol2file__)[0]
