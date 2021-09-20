@@ -8,6 +8,7 @@ import os
 import fields
 import options
 import runners
+import progressdia
 import atomiffileio
 
 class main_window(QtWidgets.QMainWindow):
@@ -22,7 +23,7 @@ class main_window(QtWidgets.QMainWindow):
         self.__firsttxtfile__ = ""
         self.__firstweightsset__ = None
         self.__secondtxtfile__ = ""
-        self.__secondeightsset__ = None
+        self.__secondweightsset__ = None
 
         QtWidgets.QMainWindow.__init__(self) 
         self.resize(640, 480) 
@@ -104,8 +105,7 @@ class main_window(QtWidgets.QMainWindow):
 
         #print(stepval, deltaval, ddieletric)
 
-        progress_dialog = QtWidgets.QProgressDialog ("Computing Coulomb molecule " + self.__firstmol2file__, \
-            "Abort", 0, 100, self)
+        progress_dialog = progressdia.progressdia(self)
         progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
 
         progress_dialog.show()
@@ -122,13 +122,16 @@ class main_window(QtWidgets.QMainWindow):
 
         progress_dialog.setLabelText("Computing DXes")
         progress_dialog.setValue(0)
+        progress_dialog.setAutoClose(False)
+        progress_dialog.setAutoReset(True)
+        progress_dialog.setMinimumDuration(0)
 
         if (cfields1 != None):
             basename = os.path.splitext(self.__firstmol2file__)[0]
             basename  = basename.split("/")[-1]
 
             gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                     cfields1, self.__secondeightsset__ , stepval, ddieletric, \
+                     cfields1, self.__firstweightsset__ , stepval, ddieletric, \
                          exportdx)
 
         progress_dialog.setValue(100)
@@ -156,10 +159,12 @@ class main_window(QtWidgets.QMainWindow):
                 basename  = basename.split("/")[-1]
             
                 gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                        cfields2, self.__secondeightsset__ , stepval, ddieletric, \
+                        cfields2, self.__secondweightsset__ , stepval, ddieletric, \
                             exportdx)
             
             progress_dialog.setValue(100)
+
+        progress_dialog.close()
 
     def configure(self):
 
@@ -251,18 +256,18 @@ class main_window(QtWidgets.QMainWindow):
         try:
             self.__firstweightsset__ = atomiffileio.extractweight ( \
                 self.__firsttxtfile__)
-            self.__secondeightsset__ = atomiffileio.extractweight ( \
+            self.__secondweightsset__ = atomiffileio.extractweight ( \
                 self.__secondtxtfile__)
         except Exception as msg:
             self.__firstweightsset__ = None
-            self.__secondeightsset__ = None
+            self.__secondweightsset__ = None
             QtWidgets.QMessageBox.critical( self, \
                 "ERROR", \
                     "error in reading txt files " + str(msg))
             return
         
         if (len(self.__firstmolsset__) != len(self.__firstweightsset__)) or \
-            (len(self.__secondeightsset__) != len(self.__secondmolsset__)):
+            (len(self.__secondweightsset__) != len(self.__secondmolsset__)):
             
             self.__firstmolsset__ = atomiffileio.mol2atomextractor ( \
                 self.__firstmol2file__)
@@ -271,7 +276,7 @@ class main_window(QtWidgets.QMainWindow):
 
             self.__firstweightsset__ = atomiffileio.extractweight ( \
                 self.__firsttxtfile__)
-            self.__secondeightsset__ = atomiffileio.extractweight ( \
+            self.__secondweightsset__ = atomiffileio.extractweight ( \
                 self.__secondtxtfile__)
  
             QtWidgets.QMessageBox.critical( self, \
