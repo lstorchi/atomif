@@ -106,22 +106,33 @@ class main_window(QtWidgets.QMainWindow):
         #print(stepval, deltaval, ddieletric)
 
         progress_dialog = progressdia.progressdia(self)
-        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        #progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
 
         progress_dialog.show()
-        progress_dialog.setValue(0)
+        progress_dialog.set_value(0)
+        progress_dialog.set_label("Test")
 
-        if (progress_dialog.wasCanceled()):
+        self.calc = progressdia.External()
+        self.calc.countChanged.connect(progress_dialog.on_count_changed)
+        self.calc.start()
+
+        #calc.wait()
+
+
+        if (progress_dialog.was_canceled()):
           return  
 
-        cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
-            1.0, False, ddieletric, progress_dialog)
+        #progress_dialog.close() 
+        return
+
+        #cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
+        #    1.0, False, ddieletric, progress_dialog)
 
         gmean1 = None 
         allfields1 = None
 
         progress_dialog.setLabelText("Computing DXes")
-        progress_dialog.setValue(0)
+        progress_dialog.set_value(0)
         progress_dialog.setAutoClose(False)
         progress_dialog.setAutoReset(True)
         progress_dialog.setMinimumDuration(0)
@@ -145,7 +156,7 @@ class main_window(QtWidgets.QMainWindow):
             
             progress_dialog.setValue(0)
             
-            if (progress_dialog.wasCanceled()):
+            if (progress_dialog.was_canceled()):
               return  
             
             cfields2 = fields.get_cfields(self.__secondmolsset__, stepval, deltaval, \

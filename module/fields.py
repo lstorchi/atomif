@@ -35,9 +35,9 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
 
   # read data of first molecule
   if progress != None:
-      progress.setValue(0)
+      progress.set_value(0)
       progress.setLabelText("Initial setup")
-      if (progress.wasCanceled()):
+      if (progress.was_canceled()):
           return None 
 
   mol = mols[0]
@@ -47,8 +47,8 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
   for idx, atom in enumerate(mol):
     if progress != None:
         where = (100*(idx/len(mol)))
-        progress.setValue(where)
-        if (progress.wasCanceled()):
+        progress.set_value(where)
+        if (progress.was_canceled()):
             return None 
 
     molcoord[idx,0] = atom.coords[0]
@@ -79,8 +79,8 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
   znstep = int( ((zmax - zmin) / STEPVAL)+0.5)
 
   if progress != None:
-      progress.setValue(15)
-      if (progress.wasCanceled()):
+      progress.set_value(15)
+      if (progress.was_canceled()):
           return None
 
   molsfield = []
@@ -94,9 +94,9 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
 
     if progress != None:
         progress.setLabelText("Processing Molecule " + str(molidx + 1))
-        progress.setValue(0)
+        progress.set_value(0)
         #progress.setValue(15+(84*((molidx+1)/len(mols))))
-        if (progress.wasCanceled()):
+        if (progress.was_canceled()):
             return None 
 
     if verbose:
@@ -121,8 +121,8 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
     for ix in range(0,xnstep):
 
       if progress != None:
-          progress.setValue(100*(ix/xnstep))
-          if (progress.wasCanceled()):
+          progress.set_value(100*(ix/xnstep))
+          if (progress.was_canceled()):
               return None 
 
       refpoint[0,0] = xmin + ix*STEPVAL
