@@ -134,8 +134,7 @@ class main_window(QtWidgets.QMainWindow):
      
 
     def runcu_finished(self):
-        print("in runcu_finished ")
-        print("TODO")
+        print("TODO in runcu_finished")
 
         self.__runcu_progress_dialog__.close()
 
