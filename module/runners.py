@@ -61,10 +61,13 @@ class External(QThread):
 
             print(count)
 
+
 class progressdia (QDialog):
+
+    cancel_signal = pyqtSignal(int)
+
     def __init__(self, parent=None):
 
-        self.__cancelled__ = False
         super(progressdia, self).__init__(parent)
         
         self.initUI()
@@ -74,29 +77,25 @@ class progressdia (QDialog):
         self.__progress__ = QProgressBar(self)
         self.__progress__.setGeometry(0, 0, 300, 25)
         self.__progress__.setMaximum(100)
-        self.__button__ = QPushButton('Cancel', self)
-        self.__button__.move(0, 30)
-        self.__button__.clicked.connect(self.on_button_click)
+
+        self.__cancel_button__ = QPushButton('Cancel', self)
+        self.__cancel_button__.move(0, 30)
+        self.__cancel_button__.clicked.connect(self.cancel_func)
 
         self.grid = QGridLayout(self)
 
         self.grid.addWidget(self.__progress__ , 0, 0)
-        self.grid.addWidget(self.__button__, 1, 0)
+        self.grid.addWidget(self.__cancel_button__, 1, 0)
 
     def set_label(self, label):
         self.setWindowTitle(label)
 
-    def on_button_click(self):
-        self.__cancelled__ = True
+    def cancel_func (self):
+        self.cancel_signal.emit(1)
         self.close()
-        return
-
-    def was_canceled(self):
-        return self.__cancelled__
 
     def on_count_changed(self, value):
         self.__progress__.setValue(value)
 
     def set_value(self, v):
         self.__progress__.setValue(v)
-

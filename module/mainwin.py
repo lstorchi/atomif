@@ -104,15 +104,16 @@ class main_window(QtWidgets.QMainWindow):
 
         #print(stepval, deltaval, ddieletric)
 
-        self.__runcu_progress_dialog = runners.progressdia(self)
-        #progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        self.__runcu_progress_dialog__ = runners.progressdia(self)
+        self.__runcu_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
 
-        self.__runcu_progress_dialog.show()
-        self.__runcu_progress_dialog.set_value(0)
-        self.__runcu_progress_dialog.set_label("Test")
+        self.__runcu_progress_dialog__.show()
+        self.__runcu_progress_dialog__.set_value(0)
+        self.__runcu_progress_dialog__.set_label("Run Coulumb")
+        self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
 
         self.__calc__ = runners.External()
-        self.__calc__.countChanged.connect(self.__runcu_progress_dialog.on_count_changed)
+        self.__calc__.countChanged.connect(self.__runcu_progress_dialog__.on_count_changed)
         self.__calc__.finished.connect(self.runcu_finished)
         self.__calc__.start()
 
@@ -177,8 +178,12 @@ class main_window(QtWidgets.QMainWindow):
         print("in  runcu_finished ")
         print("done")
 
-        self.__runcu_progress_dialog.close()
+        self.__runcu_progress_dialog__.close()
 
+    def runcu_cancel(self, val):
+
+        if val == 1:
+            self.__calc__.terminate()
 
     def configure(self):
 
