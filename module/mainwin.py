@@ -122,61 +122,11 @@ class main_window(QtWidgets.QMainWindow):
 
         return
 
-        #cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
-        #    1.0, False, ddieletric, progress_dialog)
-
-        gmean1 = None 
-        allfields1 = None
-
-        progress_dialog.setLabelText("Computing DXes")
-        progress_dialog.set_value(0)
-        progress_dialog.setAutoClose(False)
-        progress_dialog.setAutoReset(True)
-        progress_dialog.setMinimumDuration(0)
-
-        if (cfields1 != None):
-            basename = os.path.splitext(self.__firstmol2file__)[0]
-            basename  = basename.split("/")[-1]
-
-            gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                     cfields1, self.__firstweightsset__ , stepval, ddieletric, \
-                         exportdx)
-
-        progress_dialog.setValue(100)
-
-        gmean2 = None 
-        allfields2 = None
-
-        if (cfields1 != None):
-            progress_dialog.setLabelText("Computing Coulomb molecule " + \
-                self.__secondmol2file__) 
-            
-            progress_dialog.setValue(0)
-            
-            if (progress_dialog.was_canceled()):
-              return  
-            
-            cfields2 = fields.get_cfields(self.__secondmolsset__, stepval, deltaval, \
-                1.0, False, ddieletric, progress_dialog)
-
-            progress_dialog.setLabelText("Computing DXes")
-            progress_dialog.setValue(0)
-            
-            if (cfields2 != None):
-                basename = os.path.splitext(self.__secondmol2file__)[0]
-                basename  = basename.split("/")[-1]
-            
-                gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                        cfields2, self.__secondweightsset__ , stepval, ddieletric, \
-                            exportdx)
-            
-            progress_dialog.setValue(100)
-
-        progress_dialog.close()
+     
 
     def runcu_finished(self):
-        print("in  runcu_finished ")
-        print("done")
+        print("in runcu_finished ")
+        print("TODO")
 
         self.__runcu_progress_dialog__.close()
 

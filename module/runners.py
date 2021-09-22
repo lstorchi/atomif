@@ -4,6 +4,8 @@ from PyQt5 import QtGui, QtWidgets
 
 import time
 
+import fields
+
 class runcudialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
@@ -44,15 +46,69 @@ class runcudialog(QtWidgets.QDialog):
 
         self.close()
 
-TIME_LIMIT = 100
-
-class External(QThread):
+class runcu_thread(QThread):
     """
     Runs a counter thread.
     """
     countChanged = pyqtSignal(int)
 
+    def configure (self, ddieletric, firstmolsset, stepval, deltaval, \
+        progress_dialog, exportdx): 
+
+        self.__ddieletric__ = ddieletric
+        self.__firstmolsset__ = firstmolsset
+        self.__stepval__ = stepval
+        self.__deltaval__ = deltaval
+        self.__progress_dialog__ = progress_dialog
+        self.__exportdx__ = exportdx
+
     def run(self):
+        
+        cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
+            1.0, False, ddieletric, progress_dialog)
+
+        gmean1 = None 
+        allfields1 = None
+
+        if (cfields1 != None):
+            basename = os.path.splitext(self.__firstmol2file__)[0]
+            basename  = basename.split("/")[-1]
+
+            gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                     cfields1, self.__firstweightsset__ , stepval, ddieletric, \
+                        exportdx)
+
+        progress_dialog.setValue(100)
+
+        gmean2 = None 
+        allfields2 = None
+
+        if (cfields1 != None):
+            progress_dialog.setLabelText("Computing Coulomb molecule " + \
+                self.__secondmol2file__) 
+            
+            progress_dialog.setValue(0)
+            
+            if (progress_dialog.was_canceled()):
+              return  
+            
+            cfields2 = fields.get_cfields(self.__secondmolsset__, stepval, deltaval, \
+                1.0, False, ddieletric, progress_dialog)
+
+            progress_dialog.setLabelText("Computing DXes")
+            progress_dialog.setValue(0)
+            
+            if (cfields2 != None):
+                basename = os.path.splitext(self.__secondmol2file__)[0]
+                basename  = basename.split("/")[-1]
+            
+                gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                        cfields2, self.__secondweightsset__ , stepval, ddieletric, \
+                            exportdx)
+            
+            progress_dialog.setValue(100)
+
+        progress_dialog.close()
         count = 0
         while count < TIME_LIMIT:
             count +=1
