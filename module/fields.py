@@ -31,31 +31,27 @@ def __get_seps__ (refpoint, molcoord, molcharges, coulombconst, \
 ###############################################################
 
 def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
-     ddielectric=False, progress = None ): 
+     ddielectric=False, progress = None, checkcancel = None, \
+       startwith = 0, tot = 100 ): 
 
   # read data of first molecule
   if progress != None:
-      progress.set_value(0)
-      progress.setLabelText("Initial setup")
-      if (progress.was_canceled()):
-          return None 
+    progress.emit(startwith)
 
   mol = mols[0]
   atomnum = len(mol)
   molcoord = numpy.zeros((atomnum, 3))
   molcharges = numpy.zeros((atomnum, 1))
   for idx, atom in enumerate(mol):
-    if progress != None:
-        where = (100*(idx/len(mol)))
-        progress.set_value(where)
-        if (progress.was_canceled()):
-            return None 
-
     molcoord[idx,0] = atom.coords[0]
     molcoord[idx,1] = atom.coords[1]
     molcoord[idx,2] = atom.coords[2]
     molcharges[idx,0] = atom.partialcharge
-  
+
+  if checkcancel != None:
+    if checkcancel.was_cancelled():
+      return None
+
   # generate grid 
   xmin = min(molcoord[:,0])
   ymin = min(molcoord[:,1])
@@ -78,11 +74,6 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
   ynstep = int( ((ymax - ymin) / STEPVAL)+0.5)
   znstep = int( ((zmax - zmin) / STEPVAL)+0.5)
 
-  if progress != None:
-      progress.set_value(15)
-      if (progress.was_canceled()):
-          return None
-
   molsfield = []
   
   if verbose:
@@ -92,15 +83,17 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
 
   for molidx in range(len(mols)):
 
-    if progress != None:
-        progress.setLabelText("Processing Molecule " + str(molidx + 1))
-        progress.set_value(0)
-        #progress.setValue(15+(84*((molidx+1)/len(mols))))
-        if (progress.was_canceled()):
-            return None 
-
     if verbose:
       print("Computing mol ", molidx+1)
+
+    if progress != None:
+      where = int(startwith + (tot * ((molidx+1)/len(mols))))
+      progress.emit(where)
+      
+    if checkcancel != None:
+      if checkcancel.was_cancelled():
+        return None
+
     # read coord first molecule
     atomnum = len(mols[molidx])
     molcoord = numpy.zeros((atomnum, 3))
@@ -119,12 +112,6 @@ def get_cfields (mols, STEPVAL, DELTAVAL, coulombconst, verbose = False, \
     coords = []
     refpoint = numpy.zeros((1, 3))
     for ix in range(0,xnstep):
-
-      if progress != None:
-          progress.set_value(100*(ix/xnstep))
-          if (progress.was_canceled()):
-              return None 
-
       refpoint[0,0] = xmin + ix*STEPVAL
       for iy in range(0,ynstep):
         refpoint[0,1] = ymin + iy*STEPVAL

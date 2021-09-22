@@ -93,35 +93,44 @@ class main_window(QtWidgets.QMainWindow):
 
     def runcu (self):
 
-        self.__runcu_dialog__.setWindowTitle("Run Coulomb Carbo Index")
-        
-        self.__runcu_dialog__.exec()
+        if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
 
-        stepval = float(self.__runcu_dialog__.stepval_line.text())
-        deltaval = float(self.__runcu_dialog__.deltaval_line.text())
-        ddieletric = self.__runcu_dialog__.ddielcheckbox.isChecked()
-        exportdx = self.__runcu_dialog__.exportdxcheckbox.isChecked()
-
-        #print(stepval, deltaval, ddieletric)
-
-        self.__runcu_progress_dialog__ = runners.progressdia(self)
-        self.__runcu_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
-
-        self.__runcu_progress_dialog__.show()
-        self.__runcu_progress_dialog__.set_value(0)
-        self.__runcu_progress_dialog__.set_label("Run Coulumb")
-        self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
-
-        self.__calc__ = runners.External()
-        self.__calc__.countChanged.connect(self.__runcu_progress_dialog__.on_count_changed)
-        self.__calc__.finished.connect(self.runcu_finished)
-        self.__calc__.start()
-
-        #calc.wait()
-        #progress_dialog.close() 
-
-        return
-
+            self.__runcu_dialog__.setWindowTitle("Run Coulomb Carbo Index")
+            
+            self.__runcu_dialog__.exec()
+           
+            stepval = float(self.__runcu_dialog__.stepval_line.text())
+            deltaval = float(self.__runcu_dialog__.deltaval_line.text())
+            ddieletric = self.__runcu_dialog__.ddielcheckbox.isChecked()
+            exportdx = self.__runcu_dialog__.exportdxcheckbox.isChecked()
+           
+            #print(stepval, deltaval, ddieletric)
+           
+            self.__runcu_progress_dialog__ = runners.progressdia(self)
+            self.__runcu_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
+           
+            self.__runcu_progress_dialog__.show()
+            self.__runcu_progress_dialog__.set_value(0)
+            self.__runcu_progress_dialog__.set_title("Run Coulumb")
+            self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
+           
+            self.__calc__ = runners.runcu_thread()
+            self.__calc__ .configure (ddieletric, \
+                self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
+                self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
+                stepval, deltaval, exportdx, self.__workdir__, \
+                self.__runcu_progress_dialog__)
+            self.__calc__.count_changed.connect(self.__runcu_progress_dialog__.on_count_changed)
+            self.__calc__.finished.connect(self.runcu_finished)
+            self.__calc__.start()
+           
+            #calc.wait()
+            #progress_dialog.close() 
+           
+        else:
+            QtWidgets.QMessageBox.critical( self, \
+                    "WARNING", \
+                        "No molecules have been specified ") 
      
 
     def runcu_finished(self):
@@ -130,10 +139,15 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__runcu_progress_dialog__.close()
 
-    def runcu_cancel(self, val):
+    def runcu_cancel(self):
 
-        if val == 1:
+        self.__calc__.m_abort = True
+        if not self.__calc__.wait(5000):
             self.__calc__.terminate()
+            self.__calc__.quit()
+            self.__calc__.wait()
+
+        self.__runcu_progress_dialog__.close()
 
     def configure(self):
 

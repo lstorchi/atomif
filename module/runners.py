@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QDialog, QProgressBar, QPushButton, QGridLayout)
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5 import QtGui, QtWidgets
 
-import time
+import os
 
 import fields
 
@@ -50,86 +50,104 @@ class runcu_thread(QThread):
     """
     Runs a counter thread.
     """
-    countChanged = pyqtSignal(int)
+    count_changed = pyqtSignal(int)
 
-    def configure (self, ddieletric, firstmolsset, stepval, deltaval, \
-        progress_dialog, exportdx): 
+    def configure (self, ddieletric, \
+        firstmolsset, firstmol2file, firstweightsset, \
+        secondmolsset, secondmol2file, secondweightsset, \
+        stepval, deltaval, exportdx, workdir, progress): 
 
         self.__ddieletric__ = ddieletric
+
         self.__firstmolsset__ = firstmolsset
+        self.__firstmol2file__ = firstmol2file
+        self.__firstweightsset__ = firstweightsset
+
+        self.__secondmolsset__ = secondmolsset
+        self.__secondmol2file__ = secondmol2file
+        self.__secondweightsset__ = secondweightsset
+
         self.__stepval__ = stepval
         self.__deltaval__ = deltaval
-        self.__progress_dialog__ = progress_dialog
         self.__exportdx__ = exportdx
+        self.__workdir__ = workdir
+
+        self.__progress__ = progress
 
     def run(self):
-        
-        cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
-            1.0, False, ddieletric, progress_dialog)
 
-        gmean1 = None 
-        allfields1 = None
+        self.count_changed.emit(0)
 
-        if (cfields1 != None):
+        self.__progress__.set_label("Running first set of molecules")
+
+        self.__cfields1__ = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
+            self.__deltaval__ ,  1.0, False, self.__ddieletric__, \
+                self.count_changed, self.__progress__, 0, 45 )
+
+        if self.__progress__.was_cancelled():
+            return 
+
+        self.count_changed.emit(45)
+
+        self.__gmean1__ = None 
+        self.__allfields1__ = None
+
+        if (self.__cfields1__ != None):
             basename = os.path.splitext(self.__firstmol2file__)[0]
             basename  = basename.split("/")[-1]
 
-            gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                     cfields1, self.__firstweightsset__ , stepval, ddieletric, \
-                        exportdx)
+            if self.__progress__.was_cancelled():
+                return 
 
-        progress_dialog.setValue(100)
+            self.__gmean1__, self.__allfields1__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                     self.__cfields1__, self.__firstweightsset__ , self.__stepval__, self.__ddieletric__, \
+                        self.__exportdx__)
 
-        gmean2 = None 
-        allfields2 = None
+        self.count_changed.emit(50)
 
-        if (cfields1 != None):
-            progress_dialog.setLabelText("Computing Coulomb molecule " + \
-                self.__secondmol2file__) 
+        self.__gmean2__ = None 
+        self.__allfields2__ = None
+
+        self.__progress__.set_label("Running second set of molecules")
+
+        if (self.__cfields1__ != None):
             
-            progress_dialog.setValue(0)
-            
-            if (progress_dialog.was_canceled()):
+            if (self.__progress__.was_cancelled()):
               return  
-            
-            cfields2 = fields.get_cfields(self.__secondmolsset__, stepval, deltaval, \
-                1.0, False, ddieletric, progress_dialog)
 
-            progress_dialog.setLabelText("Computing DXes")
-            progress_dialog.setValue(0)
-            
-            if (cfields2 != None):
+            self.__cfields2__ = fields.get_cfields(self.__secondmolsset__, self.__stepval__, \
+                self.__deltaval__, 1.0, False, self.__ddieletric__, self.count_changed, \
+                    self.__progress__, 50, 45 )
+
+            if (self.__cfields2__ != None):
                 basename = os.path.splitext(self.__secondmol2file__)[0]
                 basename  = basename.split("/")[-1]
+
+                if self.__progress__.was_cancelled():
+                    return 
             
-                gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                        cfields2, self.__secondweightsset__ , stepval, ddieletric, \
-                            exportdx)
+                self.__gmean2__, self.__allfields2__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                        self.__cfields2__, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
+                            self.__exportdx__)
             
-            progress_dialog.setValue(100)
-
-        progress_dialog.close()
-        count = 0
-        while count < TIME_LIMIT:
-            count +=1
-            time.sleep(0.1)
-            self.countChanged.emit(count)
-
-            print(count)
-
-
+            self.count_changed.emit(100)
+        
 class progressdia (QDialog):
 
-    cancel_signal = pyqtSignal(int)
+    cancel_signal = pyqtSignal()
 
     def __init__(self, parent=None):
 
         super(progressdia, self).__init__(parent)
-        
+
+        self.__cancelled__ = False       
         self.initUI()
         
     def initUI(self):
         self.setWindowTitle('Progress Bar')
+
+        self.__label__ = QtWidgets.QLabel("Starting ..,", self)
+
         self.__progress__ = QProgressBar(self)
         self.__progress__.setGeometry(0, 0, 300, 25)
         self.__progress__.setMaximum(100)
@@ -139,19 +157,26 @@ class progressdia (QDialog):
         self.__cancel_button__.clicked.connect(self.cancel_func)
 
         self.grid = QGridLayout(self)
-
-        self.grid.addWidget(self.__progress__ , 0, 0)
-        self.grid.addWidget(self.__cancel_button__, 1, 0)
+ 
+        self.grid.addWidget(self.__label__, 0, 0)
+        self.grid.addWidget(self.__progress__ , 1, 0)
+        self.grid.addWidget(self.__cancel_button__, 2, 0)
 
     def set_label(self, label):
-        self.setWindowTitle(label)
+        self.__label__.setText(label)
+
+    def set_title (self, text):
+        self.setWindowTitle(text)
 
     def cancel_func (self):
-        self.cancel_signal.emit(1)
-        self.close()
+        self.__cancelled__ = True
+        self.cancel_signal.emit()
+
+    def was_cancelled(self):
+        return self.__cancelled__
 
     def on_count_changed(self, value):
         self.__progress__.setValue(value)
 
-    def set_value(self, v):
-        self.__progress__.setValue(v)
+    def set_value(self, value):
+        self.__progress__.setValue(value)
