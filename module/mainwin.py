@@ -8,7 +8,6 @@ import os
 import fields
 import options
 import runners
-import progressdia
 import atomiffileio
 
 class main_window(QtWidgets.QMainWindow):
@@ -105,24 +104,21 @@ class main_window(QtWidgets.QMainWindow):
 
         #print(stepval, deltaval, ddieletric)
 
-        progress_dialog = progressdia.progressdia(self)
+        self.__runcu_progress_dialog = runners.progressdia(self)
         #progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
 
-        progress_dialog.show()
-        progress_dialog.set_value(0)
-        progress_dialog.set_label("Test")
+        self.__runcu_progress_dialog.show()
+        self.__runcu_progress_dialog.set_value(0)
+        self.__runcu_progress_dialog.set_label("Test")
 
-        self.calc = progressdia.External()
-        self.calc.countChanged.connect(progress_dialog.on_count_changed)
-        self.calc.start()
+        self.__calc__ = runners.External()
+        self.__calc__.countChanged.connect(self.__runcu_progress_dialog.on_count_changed)
+        self.__calc__.finished.connect(self.runcu_finished)
+        self.__calc__.start()
 
         #calc.wait()
-
-
-        if (progress_dialog.was_canceled()):
-          return  
-
         #progress_dialog.close() 
+
         return
 
         #cfields1 = fields.get_cfields(self.__firstmolsset__, stepval, deltaval, \
@@ -176,6 +172,13 @@ class main_window(QtWidgets.QMainWindow):
             progress_dialog.setValue(100)
 
         progress_dialog.close()
+
+    def runcu_finished(self):
+        print("in  runcu_finished ")
+        print("done")
+
+        self.__runcu_progress_dialog.close()
+
 
     def configure(self):
 
