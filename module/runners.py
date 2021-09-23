@@ -151,22 +151,21 @@ class runcu_thread(QThread):
 
             self.count_changed.emit(0)
 
-            """
             try:
-                carboidxs, xrefpoints, weights, pweights = \
-                  carbo.returncarbodxs(set1, set2, args.verbose, args.axis)
+                self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__ = \
+                  carbo.returncarbodxs(self.__allfields1__, self.__allfields2__, True, self.__axis__, \
+                      self.count_changed, self.__progress__)
                   
-                stdev = carboidxs.std(0)
-                meanmtx = carboidxs.mean(0)
+                #stdev = carboidxs.std(0)
+                #meanmtx = carboidxs.mean(0)
                
-                waverage = numpy.average(carboidxs, 0, weights)
-                wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+                #waverage = numpy.average(carboidxs, 0, weights)
+                #wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
                
-                pwaverage = numpy.average(carboidxs, 0, pweights)
-                pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+                #pwaverage = numpy.average(carboidxs, 0, pweights)
+                #pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
             except Exception as exp:
                 print(exp)
-            """
 
 
 
