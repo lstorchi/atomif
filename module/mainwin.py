@@ -103,6 +103,7 @@ class main_window(QtWidgets.QMainWindow):
             deltaval = float(self.__runcu_dialog__.deltaval_line.text())
             ddieletric = self.__runcu_dialog__.ddielcheckbox.isChecked()
             exportdx = self.__runcu_dialog__.exportdxcheckbox.isChecked()
+            axis = self.__runcu_dialog__.axis_line.text()
            
             #print(stepval, deltaval, ddieletric)
            
@@ -115,7 +116,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
            
             self.__calc__ = runners.runcu_thread()
-            self.__calc__ .configure (ddieletric, \
+            self.__calc__ .configure (ddieletric, axis, \
                 self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
                 self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
                 stepval, deltaval, exportdx, self.__workdir__, \
