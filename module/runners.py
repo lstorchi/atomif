@@ -3,7 +3,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5 import QtGui, QtWidgets
 
 import os
-
+import carbo
 import fields
 
 class runcudialog(QtWidgets.QDialog):
@@ -151,7 +151,22 @@ class runcu_thread(QThread):
 
             self.count_changed.emit(0)
 
-
+            """
+            try:
+                carboidxs, xrefpoints, weights, pweights = \
+                  carbo.returncarbodxs(set1, set2, args.verbose, args.axis)
+                  
+                stdev = carboidxs.std(0)
+                meanmtx = carboidxs.mean(0)
+               
+                waverage = numpy.average(carboidxs, 0, weights)
+                wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+               
+                pwaverage = numpy.average(carboidxs, 0, pweights)
+                pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+            except Exception as exp:
+                print(exp)
+            """
 
 
 
