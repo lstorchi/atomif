@@ -60,6 +60,20 @@ class runcu_thread(QThread):
     """
     count_changed = pyqtSignal(int)
 
+    __carboidxs__ = None 
+    __refpoints__ = None 
+    __weights__ = None 
+    __pweights__ = None
+    __done__ = False
+
+    def get_carboidxs (self):
+
+        if self.__done__ :
+            return self.__carboidxs__ , \
+                self.__refpoints__ , \
+                    self.__weights__ , \
+                        self.__pweights__
+
     def configure (self, ddieletric, axis, \
         firstmolsset, firstmol2file, firstweightsset, \
         secondmolsset, secondmol2file, secondweightsset, \
@@ -138,9 +152,11 @@ class runcu_thread(QThread):
                 self.__gmean2__, self.__allfields2__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
                         self.__cfields2__, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
                             self.__exportdx__, \
-                                list(self.__allfields1__.values())[0]) # fit respect to the first one so we can compute carbo
+                                list(self.__allfields1__.values())[0][1]) # fit respect to the first one so we can compute carbo
             
-            self.count_changed.emit(100)
+                self.count_changed.emit(100)
+
+                self.__done__ = True
 
         if (self.__allfields1__ != None) and (self.__allfields2__ != None):
             # compute carbo
@@ -153,21 +169,25 @@ class runcu_thread(QThread):
 
             try:
                 self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__ = \
-                  carbo.returncarbodxs(self.__allfields1__, self.__allfields2__, True, self.__axis__, \
+                  carbo.returncarbodxs(self.__allfields1__, self.__allfields2__, False, self.__axis__, \
                       self.count_changed, self.__progress__)
+
+                self.count_changed.emit(100)
                   
                 #stdev = carboidxs.std(0)
                 #meanmtx = carboidxs.mean(0)
                
                 #waverage = numpy.average(carboidxs, 0, weights)
                 #wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
-               
-                #pwaverage = numpy.average(carboidxs, 0, pweights)
-                #pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
             except Exception as exp:
-                print(exp)
-
-
+                self.__carboidxs__ = None 
+                self.__refpoints__ = None 
+                self.__weights__ = None 
+                self.__pweights__ = None
+                
+                QtWidgets.QMessageBox.critical( self, \
+                    "ERROR", \
+                        exp) 
 
         
 class progressdia (QDialog):

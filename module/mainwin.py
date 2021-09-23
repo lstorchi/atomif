@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import matplotlib.pyplot as plt
 
 import os
-import fields
+import numpy
 import options
 import runners
 import atomiffileio
@@ -13,6 +13,8 @@ import atomiffileio
 class main_window(QtWidgets.QMainWindow):
 
     def __init__(self):
+
+        self.__plot_done__ = False
 
         self.__firstmol2file__ = ""
         self.__firstmolsset__ = None
@@ -135,9 +137,44 @@ class main_window(QtWidgets.QMainWindow):
      
 
     def runcu_finished(self):
-        print("TODO in runcu_finished")
-
         self.__runcu_progress_dialog__.close()
+
+        carboidxs , refpoints, weights, pweights = self.__calc__.get_carboidxs()
+
+        stdev = carboidxs.std(0)
+        meanmtx = carboidxs.mean(0)
+        
+        waverage = numpy.average(carboidxs, 0, weights)
+        wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+        
+        pwaverage = numpy.average(carboidxs, 0, pweights)
+        pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+
+        if self.__plot_done__ :
+            self.__ax__.cla()
+            self.__canvas__.draw()
+            self.__plot_done__ = False
+        else:
+            self.__ax__ = self.__figure__.add_subplot(111)
+
+        self.__ax__.errorbar(refpoints, meanmtx, stdev,  linestyle='None', \
+            marker='^', label="Mean and stdev")
+        self.__ax__.plot(refpoints, meanmtx, linestyle='--')
+        
+        self.__ax__.errorbar(refpoints, waverage, wvariance,  linestyle='None', \
+            marker='^', label="Weighted Mean and stdev")
+        self.__ax__.plot(refpoints, waverage, linestyle='--')
+  
+        self.__ax__.errorbar(refpoints, pwaverage, pwvariance,  linestyle='None', \
+            marker='^', label="PWeighted Mean and stdev")
+        self.__ax__.plot(refpoints, pwaverage, linestyle='--')
+
+        self.__ax__.legend(loc="lower left")
+
+        self.__canvas__.draw()
+        self.__plot_done__ = True
+
+        print("TODO in runcu_finished can save the resukts as txt, csv file")
 
     def runcu_cancel(self):
 

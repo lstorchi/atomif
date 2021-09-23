@@ -1,9 +1,5 @@
-import scipy.spatial
 import numpy 
 import math
-import os
-
-from scipy.io import FortranFile
 
 IDXSLCT = 5
 
@@ -12,8 +8,6 @@ IDXSLCT = 5
 def returncarbodxs(set1, set2, verbose=False, axis="x", \
     count_changed = None, progress = None):
 
-    g = next(iter(set1.values()))
-   
     generalidx = 0
   
     aidx1 = 0
@@ -32,12 +26,23 @@ def returncarbodxs(set1, set2, verbose=False, axis="x", \
         aidx1 = 2
         aidx2 = 0
         aidx3 = 1
-  
+
+    g = next(iter(set1.values()))
     xrefpoints = numpy.zeros(g[1].grid.shape[aidx1])
     carboidxs = numpy.zeros((len(set1)*len(set2), g[1].grid.shape[aidx1]))
-  
+
+    totcounter = 0 
     for v1 in set1:
+        if progress != None:
+            if progress.was_cancelled():
+                return None
+
         for v2 in set2:
+            totcounter += 1
+            if count_changed != None:
+                where = 100 * (totcounter / (len(set1)*len(set2)))
+                count_changed.emit(where)
+            
             if verbose:
                 print("Compare ", v1, v2)
             

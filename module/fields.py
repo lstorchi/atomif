@@ -165,11 +165,11 @@ def exporttodx (basename, cfields, weights, stepvalue, \
      
         if tofitw != None:
             g_on = g.resample(tofitw)
-            allfields[name] = g_on
+            allfields[name] =(weights[i], g_on)
             if writefiles:
                 g_on.export(name)
         else:
-            allfields[name] = g
+            allfields[name] = (weights[i], g)
             if writefiles:
                 g.export(name)
 
