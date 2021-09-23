@@ -26,6 +26,11 @@ class runcudialog(QtWidgets.QDialog):
         self.deltaval_line.move(20, 20)
         self.deltaval_line.resize(280,40)
 
+        axis_label = QtWidgets.QLabel("Axis : ", self)
+        self.axis_line = QtWidgets.QLineEdit("x", self)
+        self.axis_line.move(20, 20)
+        self.axis_line.resize(280,40)
+
         self.ddielcheckbox = QtWidgets.QCheckBox("Enable Dielectric damping ", self)
 
         self.exportdxcheckbox = QtWidgets.QCheckBox("Export DX files ", self)
@@ -37,10 +42,13 @@ class runcudialog(QtWidgets.QDialog):
         self.grid.addWidget(deltaval_label, 1, 0)
         self.grid.addWidget(self.deltaval_line, 1, 1)
 
-        self.grid.addWidget(self.ddielcheckbox, 2, 0)
-        self.grid.addWidget(self.exportdxcheckbox, 3, 0)
+        self.grid.addWidget(axis_label, 2, 0)
+        self.grid.addWidget(self.axis_line, 2, 1)
 
-        self.grid.addWidget(self.okbutton, 4, 2)
+        self.grid.addWidget(self.ddielcheckbox, 3, 0)
+        self.grid.addWidget(self.exportdxcheckbox, 4, 0)
+
+        self.grid.addWidget(self.okbutton, 5, 2)
 
     def run(self):
 
@@ -52,12 +60,13 @@ class runcu_thread(QThread):
     """
     count_changed = pyqtSignal(int)
 
-    def configure (self, ddieletric, \
+    def configure (self, ddieletric, axis, \
         firstmolsset, firstmol2file, firstweightsset, \
         secondmolsset, secondmol2file, secondweightsset, \
         stepval, deltaval, exportdx, workdir, progress): 
 
         self.__ddieletric__ = ddieletric
+        self.__axis__ = axis
 
         self.__firstmolsset__ = firstmolsset
         self.__firstmol2file__ = firstmol2file
@@ -101,7 +110,7 @@ class runcu_thread(QThread):
 
             self.__gmean1__, self.__allfields1__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
                      self.__cfields1__, self.__firstweightsset__ , self.__stepval__, self.__ddieletric__, \
-                        self.__exportdx__)
+                        self.__exportdx__, None)
 
         self.count_changed.emit(50)
 
@@ -110,7 +119,7 @@ class runcu_thread(QThread):
 
         self.__progress__.set_label("Running second set of molecules")
 
-        if (self.__cfields1__ != None):
+        if (self.__allfields1__ != None):
             
             if (self.__progress__.was_cancelled()):
               return  
@@ -125,12 +134,27 @@ class runcu_thread(QThread):
 
                 if self.__progress__.was_cancelled():
                     return 
-            
+
                 self.__gmean2__, self.__allfields2__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
                         self.__cfields2__, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
-                            self.__exportdx__)
+                            self.__exportdx__, \
+                                list(self.__allfields1__.values())[0]) # fit respect to the first one so we can compute carbo
             
             self.count_changed.emit(100)
+
+        if (self.__allfields1__ != None) and (self.__allfields2__ != None):
+            # compute carbo
+            self.__progress__.set_title("Compute Carbo index")
+
+            self.__progress__.set_label("Computing Carbo index alog " +  \
+                self.__axis__ + " axis")
+
+            self.count_changed.emit(0)
+
+
+
+
+
         
 class progressdia (QDialog):
 
