@@ -14,6 +14,12 @@ class main_window(QtWidgets.QMainWindow):
 
     def __init__(self):
 
+        self.__runcu_done__ = False
+        self.__runcu_carboidxs__ = None 
+        self.__runcu_refpoints__ = None
+        self.__runcu_weights__ = None
+        self.__runcu_pweights__ = None
+
         self.__plot_done__ = False
 
         self.__firstmol2file__ = ""
@@ -36,8 +42,13 @@ class main_window(QtWidgets.QMainWindow):
         ofile.setStatusTip("Open files")
         ofile.triggered.connect(self.openfiles)
 
-        sep = QtWidgets.QAction(self)
-        sep.setSeparator(True)
+        self.__savefile_runcu__ = QtWidgets.QAction(QtGui.QIcon("icons/save.png"), "Save CI Coulomb file", self)
+        self.__savefile_runcu__.setStatusTip("Save file Coulomb")
+        self.__savefile_runcu__.triggered.connect(self.runcu_savefile)
+        self.__savefile_runcu__.setEnabled(False)
+
+        #sep = QtWidgets.QAction(self)
+        #sep.setSeparator(True)
 
         quit = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Quit", self)
         quit.setShortcut("Ctrl+Q")
@@ -60,6 +71,7 @@ class main_window(QtWidgets.QMainWindow):
         
         file = menubar.addMenu('&File')
         file.addAction(ofile)
+        file.addAction(self.__savefile_runcu__)
         file.addAction(quit)
 
         edit = menubar.addMenu('&Edit')
@@ -94,6 +106,9 @@ class main_window(QtWidgets.QMainWindow):
         self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
 
     def runcu (self):
+
+        self.__savefile_runcu__.setEnabled(False)
+        self.__runcu_done__ = False
 
         if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
 
@@ -139,42 +154,57 @@ class main_window(QtWidgets.QMainWindow):
     def runcu_finished(self):
         self.__runcu_progress_dialog__.close()
 
-        carboidxs , refpoints, weights, pweights = self.__calc__.get_carboidxs()
+        if self.__calc__.is_done():
 
-        stdev = carboidxs.std(0)
-        meanmtx = carboidxs.mean(0)
-        
-        waverage = numpy.average(carboidxs, 0, weights)
-        wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
-        
-        pwaverage = numpy.average(carboidxs, 0, pweights)
-        pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
-
-        if self.__plot_done__ :
-            self.__ax__.cla()
+            carboidxs, refpoints, weights, pweights = self.__calc__.get_carboidxs()
+           
+            stdev = carboidxs.std(0)
+            meanmtx = carboidxs.mean(0)
+            
+            waverage = numpy.average(carboidxs, 0, weights)
+            wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+            
+            pwaverage = numpy.average(carboidxs, 0, pweights)
+            pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+           
+            if self.__plot_done__ :
+                self.__ax__.cla()
+                self.__canvas__.draw()
+                self.__plot_done__ = False
+            else:
+                self.__ax__ = self.__figure__.add_subplot(111)
+           
+            self.__ax__.set_ylim([-1.0, 1.0])
+           
+            self.__ax__.errorbar(refpoints, meanmtx, stdev,  linestyle='None', \
+                marker='^', label="Mean and stdev")
+            self.__ax__.plot(refpoints, meanmtx, linestyle='--')
+            
+            self.__ax__.errorbar(refpoints, waverage, wvariance,  linestyle='None', \
+                marker='^', label="Weighted Mean and stdev")
+            self.__ax__.plot(refpoints, waverage, linestyle='--')
+           
+            self.__ax__.errorbar(refpoints, pwaverage, pwvariance,  linestyle='None', \
+                marker='^', label="PWeighted Mean and stdev")
+            self.__ax__.plot(refpoints, pwaverage, linestyle='--')
+           
+            self.__ax__.legend(loc="lower left")
+           
             self.__canvas__.draw()
-            self.__plot_done__ = False
-        else:
-            self.__ax__ = self.__figure__.add_subplot(111)
+            self.__plot_done__ = True
+           
+            self.__savefile_runcu__.setEnabled(True)
+            self.__runcu_done__ = True
+           
+            self.__runcu_carboidxs__ = carboidxs
+            self.__runcu_refpoints__ = refpoints
+            self.__runcu_weights__ = weights
+            self.__runcu_pweights__ = pweights
 
-        self.__ax__.errorbar(refpoints, meanmtx, stdev,  linestyle='None', \
-            marker='^', label="Mean and stdev")
-        self.__ax__.plot(refpoints, meanmtx, linestyle='--')
-        
-        self.__ax__.errorbar(refpoints, waverage, wvariance,  linestyle='None', \
-            marker='^', label="Weighted Mean and stdev")
-        self.__ax__.plot(refpoints, waverage, linestyle='--')
-  
-        self.__ax__.errorbar(refpoints, pwaverage, pwvariance,  linestyle='None', \
-            marker='^', label="PWeighted Mean and stdev")
-        self.__ax__.plot(refpoints, pwaverage, linestyle='--')
+    def runcu_savefile(self):
 
-        self.__ax__.legend(loc="lower left")
-
-        self.__canvas__.draw()
-        self.__plot_done__ = True
-
-        print("TODO in runcu_finished can save the resukts as txt, csv file")
+        if self.__runcu_done__ :
+            print("TODO runcu_savefile can save the resukts as txt, csv file")
 
     def runcu_cancel(self):
 
@@ -304,5 +334,7 @@ class main_window(QtWidgets.QMainWindow):
                     "Error mismatch between number of weights and number of molecules")
             return
 
+        self.__runcu_done__ = False
+        self.__savefile_runcu__.setEnabled(False)
         
 

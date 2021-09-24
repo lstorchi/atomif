@@ -64,11 +64,15 @@ class runcu_thread(QThread):
     __refpoints__ = None 
     __weights__ = None 
     __pweights__ = None
-    __done__ = False
+    __runcu_done__ = False
+
+    def is_done(self):
+
+        return self.__runcu_done__
 
     def get_carboidxs (self):
 
-        if self.__done__ :
+        if self.__runcu_done__ :
             return self.__carboidxs__ , \
                 self.__refpoints__ , \
                     self.__weights__ , \
@@ -103,7 +107,7 @@ class runcu_thread(QThread):
 
         self.__progress__.set_label("Running first set of molecules")
 
-        self.__cfields1__ = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
+        cfields1 = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
             self.__deltaval__ ,  1.0, False, self.__ddieletric__, \
                 self.count_changed, self.__progress__, 0, 45 )
 
@@ -112,53 +116,51 @@ class runcu_thread(QThread):
 
         self.count_changed.emit(45)
 
-        self.__gmean1__ = None 
-        self.__allfields1__ = None
+        gmean1 = None 
+        allfields1 = None
 
-        if (self.__cfields1__ != None):
+        if (cfields1 != None):
             basename = os.path.splitext(self.__firstmol2file__)[0]
             basename  = basename.split("/")[-1]
 
             if self.__progress__.was_cancelled():
                 return 
 
-            self.__gmean1__, self.__allfields1__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                     self.__cfields1__, self.__firstweightsset__ , self.__stepval__, self.__ddieletric__, \
+            gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                     cfields1, self.__firstweightsset__ , self.__stepval__, self.__ddieletric__, \
                         self.__exportdx__, None)
 
         self.count_changed.emit(50)
 
-        self.__gmean2__ = None 
-        self.__allfields2__ = None
+        gmean2 = None 
+        allfields2 = None
 
         self.__progress__.set_label("Running second set of molecules")
 
-        if (self.__allfields1__ != None):
+        if (allfields1 != None):
             
             if (self.__progress__.was_cancelled()):
               return  
 
-            self.__cfields2__ = fields.get_cfields(self.__secondmolsset__, self.__stepval__, \
+            cfields2 = fields.get_cfields(self.__secondmolsset__, self.__stepval__, \
                 self.__deltaval__, 1.0, False, self.__ddieletric__, self.count_changed, \
                     self.__progress__, 50, 45 )
 
-            if (self.__cfields2__ != None):
+            if (cfields2 != None):
                 basename = os.path.splitext(self.__secondmol2file__)[0]
                 basename  = basename.split("/")[-1]
 
                 if self.__progress__.was_cancelled():
                     return 
 
-                self.__gmean2__, self.__allfields2__ = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                        self.__cfields2__, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
+                gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                        cfields2, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
                             self.__exportdx__, \
-                                list(self.__allfields1__.values())[0][1]) # fit respect to the first one so we can compute carbo
+                                list(allfields1.values())[0][1]) # fit respect to the first one so we can compute carbo
             
                 self.count_changed.emit(100)
 
-                self.__done__ = True
-
-        if (self.__allfields1__ != None) and (self.__allfields2__ != None):
+        if (allfields1 != None) and (allfields2 != None):
             # compute carbo
             self.__progress__.set_title("Compute Carbo index")
 
@@ -169,10 +171,12 @@ class runcu_thread(QThread):
 
             try:
                 self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__ = \
-                  carbo.returncarbodxs(self.__allfields1__, self.__allfields2__, False, self.__axis__, \
+                  carbo.returncarbodxs(allfields1, allfields2, False, self.__axis__, \
                       self.count_changed, self.__progress__)
 
                 self.count_changed.emit(100)
+
+                self.__runcu_done__ = True
                   
                 #stdev = carboidxs.std(0)
                 #meanmtx = carboidxs.mean(0)
