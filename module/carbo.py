@@ -111,14 +111,14 @@ def returncarbodxs(set1, set2, verbose=False, axis="x", \
                     carboidx = 1.0
                 else:
                     carboidx = num/math.sqrt(denum1 * denum2)
-             
+                
                 if verbose:
                     print("%10.5f %10.5f"%(movcoord, carboidx)) 
-             
+                
                 xrefpoints[i] = movcoord
                 carboidxs[generalidx,i] = carboidx
   
-        generalidx += 1
+            generalidx += 1
   
     weights = numpy.zeros(len(set1)*len(set2))
     pweights = numpy.zeros(len(set1)*len(set2))

@@ -152,6 +152,8 @@ class main_window(QtWidgets.QMainWindow):
      
 
     def runcu_finished(self):
+        self.__calc__.wait()
+
         self.__runcu_progress_dialog__.close()
 
         if self.__calc__.is_done():
@@ -204,9 +206,34 @@ class main_window(QtWidgets.QMainWindow):
     def runcu_savefile(self):
 
         if self.__runcu_done__ :
-            print(self.__runcu_refpoints__ )
-            print(self.__runcu_carboidxs__)
-            print("TODO runcu_savefile can save the resukts as txt, csv file")
+
+            name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
+
+            if (len(name) == 2):
+                if (name[0] != ""):
+                    carboidxs, refpoints, weights, pweights = self.__calc__.get_carboidxs()
+          
+                    stdev = carboidxs.std(0)
+                    meanmtx = carboidxs.mean(0)
+                    
+                    waverage = numpy.average(carboidxs, 0, weights)
+                    wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+                    
+                    pwaverage = numpy.average(carboidxs, 0, pweights)
+                    pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+          
+                    file = open(name[0],'w')
+
+                    axis = self.__runcu_dialog__.axis_line.text()
+          
+                    file.write("%13s %13s %13s %13s %13s %13s %13s\n"%(axis, "SMean",  \
+                        "SStdev", "WMean", "WStdev", "PWMean", "PWStdev"))
+                    for idx, std in enumerate(stdev):
+                        file.write("%+8.6e %+8.6e %+8.6e %+8.6e %+8.6e %+8.6e %+8.6e\n"%(\
+                            refpoints[idx], meanmtx[idx] , std, waverage[idx], \
+                                wvariance[idx], pwaverage[idx], pwvariance[idx] ))
+          
+                    file.close()         
 
     def runcu_cancel(self):
 
@@ -335,12 +362,17 @@ class main_window(QtWidgets.QMainWindow):
                 "ERROR", \
                     "Error mismatch between number of weights and number of molecules")
             return
-
+        
+        """
         for mol in self.__firstmolsset__:
             print("MOLECULE")
             print(mol)
 
+        print("Second Molecule")
+        for mol in self.__secondmolsset__:
+            print("MOLECULE")
+            print(mol)
+        """
+        
         self.__runcu_done__ = False
         self.__savefile_runcu__.setEnabled(False)
-        
-

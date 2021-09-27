@@ -77,6 +77,8 @@ class runcu_thread(QThread):
                 self.__refpoints__ , \
                     self.__weights__ , \
                         self.__pweights__
+        else:
+            return None, None, None, None
 
     def configure (self, ddieletric, axis, \
         firstmolsset, firstmol2file, firstweightsset, \
@@ -177,6 +179,8 @@ class runcu_thread(QThread):
                 self.count_changed.emit(100)
 
                 self.__runcu_done__ = True
+
+                #print(self.__carboidxs__)
                   
                 #stdev = carboidxs.std(0)
                 #meanmtx = carboidxs.mean(0)
