@@ -204,6 +204,8 @@ class main_window(QtWidgets.QMainWindow):
     def runcu_savefile(self):
 
         if self.__runcu_done__ :
+            print(self.__runcu_refpoints__ )
+            print(self.__runcu_carboidxs__)
             print("TODO runcu_savefile can save the resukts as txt, csv file")
 
     def runcu_cancel(self):
@@ -333,6 +335,10 @@ class main_window(QtWidgets.QMainWindow):
                 "ERROR", \
                     "Error mismatch between number of weights and number of molecules")
             return
+
+        for mol in self.__firstmolsset__:
+            print("MOLECULE")
+            print(mol)
 
         self.__runcu_done__ = False
         self.__savefile_runcu__.setEnabled(False)
