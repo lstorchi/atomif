@@ -20,6 +20,12 @@ class main_window(QtWidgets.QMainWindow):
         self.__runcu_weights__ = None
         self.__runcu_pweights__ = None
 
+        self.__runapbs_done__ = False
+        self.__runapbs_carboidxs__ = None 
+        self.__runapbs_refpoints__ = None
+        self.__runapbs_weights__ = None
+        self.__runapbs_pweights__ = None
+
         self.__plot_done__ = False
 
         self.__firstmol2file__ = ""
@@ -47,8 +53,13 @@ class main_window(QtWidgets.QMainWindow):
         self.__savefile_runcu__.triggered.connect(self.runcu_savefile)
         self.__savefile_runcu__.setEnabled(False)
 
-        #sep = QtWidgets.QAction(self)
-        #sep.setSeparator(True)
+        self.__savefile_runapbs__ = QtWidgets.QAction(QtGui.QIcon("icons/save.png"), "Save CI APBS file", self)
+        self.__savefile_runapbs__.setStatusTip("Save file APBS")
+        self.__savefile_runapbs__.triggered.connect(self.runapbs_savefile)
+        self.__savefile_runapbs__.setEnabled(False)
+
+        sep = QtWidgets.QAction(self)
+        sep.setSeparator(True)
 
         quit = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Quit", self)
         quit.setShortcut("Ctrl+Q")
@@ -65,13 +76,21 @@ class main_window(QtWidgets.QMainWindow):
         runcu.setStatusTip("Run the Carbo index using the Coulomb's law ")
         runcu.triggered.connect(self.runcu)      
 
+        runapbs = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run APBS Carboi Index", self)
+        runapbs.setShortcut("Ctrl+R")
+        runapbs.setStatusTip("Run the Carbo index using APBS ")
+        runapbs.triggered.connect(self.runapbs)      
+
         self.statusBar().show()
 
         menubar = self.menuBar()
         
         file = menubar.addMenu('&File')
         file.addAction(ofile)
+        file.addAction(sep)
         file.addAction(self.__savefile_runcu__)
+        file.addAction(self.__savefile_runapbs__) 
+        file.addAction(sep)
         file.addAction(quit)
 
         edit = menubar.addMenu('&Edit')
@@ -79,6 +98,7 @@ class main_window(QtWidgets.QMainWindow):
 
         run = menubar.addMenu('&Compute')
         run.addAction(runcu)
+        run.addAction(runapbs)
 
         help = menubar.addMenu('&Help')
 
@@ -98,12 +118,39 @@ class main_window(QtWidgets.QMainWindow):
         self.__options_dialog_files__ = options.optiondialog_files(self)
         self.__configure_dialog__ = options.configure(self)
         self.__runcu_dialog__ = runners.runcudialog(self)
+        self.__runapbs_dialog__ = runners.runapbsdialog(self)
 
         self.__workdir__ = self.__configure_dialog__.workdir_line.text()
         self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
         self.__fixpdbin__ = self.__configure_dialog__.fixpdbin_line.text()
         self.__apbsbin__ = self.__configure_dialog__.apbsbin_line.text()
         self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
+
+    def runapbs (self):
+        self.__savefile_runapbs__.setEnabled(False)
+        self.__runapbs_done__ = False
+
+        if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
+            self.__runapbs_dialog__.setWindowTitle("Run APBS Carbo Index")
+            
+            self.__runapbs_dialog__.exec()
+
+            stepval = float(self.__runapbs_dialog__.stepval_line.text())
+            deltaval = float(self.__runapbs_dialog__.deltaval_line.text())
+            exportdx = self.__runapbs_dialog__.exportdxcheckbox.isChecked()
+            axis = self.__runapbs_dialog__.axis_line.text()
+ 
+            return
+
+    def runapbs_savefile(self):
+
+        if self.__runapbs_done__ :
+
+            name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
+
+            if (len(name) == 2):
+                if (name[0] != ""):
+                    return
 
     def runcu (self):
 
