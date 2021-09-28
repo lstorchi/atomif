@@ -26,6 +26,12 @@ class main_window(QtWidgets.QMainWindow):
         self.__runapbs_weights__ = None
         self.__runapbs_pweights__ = None
 
+        self.__workdir__ = "./"
+        self.__gridbin__ = "./grid"
+        self.__fixpdbin__ = "./fixpdb"
+        self.__apbsbin__ = "/usr/bin/apbs"
+        self.__obabelbin__ = "/usr/bin/obabel"
+
         self.__plot_done__ = False
 
         self.__firstmol2file__ = ""
@@ -139,18 +145,27 @@ class main_window(QtWidgets.QMainWindow):
             deltaval = float(self.__runapbs_dialog__.deltaval_line.text())
             exportdx = self.__runapbs_dialog__.exportdxcheckbox.isChecked()
             axis = self.__runapbs_dialog__.axis_line.text()
+            
+            self.__runapbs_progress_dialog__ = runners.progressdia(self)
+            self.__runapbs_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
+           
+            self.__runapbs_progress_dialog__.show()
+            self.__runapbs_progress_dialog__.set_value(0)
+            self.__runapbs_progress_dialog__.set_title("Run Coulumb")
+            self.__runapbs_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
+
+            self.__calc_apbs__ = runners.run_thread()
+            self.__calc_apbs__ .configure (2, False, axis, \
+                self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
+                self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
+                stepval, deltaval, exportdx, self.__workdir__, \
+                self.__runapbs_progress_dialog__, self.__gridbin__ , self.__fixpdbin__ , \
+                self.__apbsbin__ , self.__obabelbin__ )
+            self.__calc_apbs__.count_changed.connect(self.__runapbs_progress_dialog__.on_count_changed)
+            self.__calc_apbs__.finished.connect(self.runapbs_finished)
+            self.__calc_apbs__.start()
  
             return
-
-    def runapbs_savefile(self):
-
-        if self.__runapbs_done__ :
-
-            name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
-
-            if (len(name) == 2):
-                if (name[0] != ""):
-                    return
 
     def runcu (self):
 
@@ -179,33 +194,37 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_progress_dialog__.set_title("Run Coulumb")
             self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
            
-            self.__calc__ = runners.runcu_thread()
-            self.__calc__ .configure (ddieletric, axis, \
+            self.__calc_cu__ = runners.run_thread()
+            self.__calc_cu__ .configure (1, ddieletric, axis, \
                 self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
                 self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
                 stepval, deltaval, exportdx, self.__workdir__, \
                 self.__runcu_progress_dialog__)
-            self.__calc__.count_changed.connect(self.__runcu_progress_dialog__.on_count_changed)
-            self.__calc__.finished.connect(self.runcu_finished)
-            self.__calc__.start()
-           
-            #calc.wait()
-            #progress_dialog.close() 
+            self.__calc_cu__.count_changed.connect(self.__runcu_progress_dialog__.on_count_changed)
+            self.__calc_cu__.finished.connect(self.runcu_finished)
+            self.__calc_cu__.start()
            
         else:
             QtWidgets.QMessageBox.critical( self, \
                     "WARNING", \
                         "No molecules have been specified ") 
-     
+
+    def runapbs_finished(self):
+        self.__calc_apbs__.wait()
+
+        self.__runapbs_progress_dialog__.close()
+
+        if self.__calc_apbs__.apbs_is_done():
+            return
 
     def runcu_finished(self):
-        self.__calc__.wait()
+        self.__calc_cu__.wait()
 
         self.__runcu_progress_dialog__.close()
 
-        if self.__calc__.is_done():
+        if self.__calc_cu__.cu_is_done():
 
-            carboidxs, refpoints, weights, pweights = self.__calc__.get_carboidxs()
+            carboidxs, refpoints, weights, pweights = self.__calc_cu__.get_carboidxs()
            
             stdev = carboidxs.std(0)
             meanmtx = carboidxs.mean(0)
@@ -250,6 +269,16 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_weights__ = weights
             self.__runcu_pweights__ = pweights
 
+    def runapbs_savefile(self):
+
+        if self.__runapbs_done__ :
+
+            name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
+
+            if (len(name) == 2):
+                if (name[0] != ""):
+                    return
+
     def runcu_savefile(self):
 
         if self.__runcu_done__ :
@@ -258,7 +287,7 @@ class main_window(QtWidgets.QMainWindow):
 
             if (len(name) == 2):
                 if (name[0] != ""):
-                    carboidxs, refpoints, weights, pweights = self.__calc__.get_carboidxs()
+                    carboidxs, refpoints, weights, pweights = self.__calc_cu__.get_carboidxs()
           
                     stdev = carboidxs.std(0)
                     meanmtx = carboidxs.mean(0)
@@ -284,13 +313,23 @@ class main_window(QtWidgets.QMainWindow):
 
     def runcu_cancel(self):
 
-        self.__calc__.m_abort = True
-        if not self.__calc__.wait(5000):
-            self.__calc__.terminate()
-            self.__calc__.quit()
-            self.__calc__.wait()
+        self.__calc_cu__.m_abort = True
+        if not self.__calc_cu__.wait(5000):
+            self.__calc_cu__.terminate()
+            self.__calc_cu__.quit()
+            self.__calc_cu__.wait()
 
         self.__runcu_progress_dialog__.close()
+
+    def runapsb_cancel(self):
+
+        self.__calc_apbs__.m_abort = True
+        if not self.__calc_apbs__.wait(5000):
+            self.__calc_apbs__.terminate()
+            self.__calc_apbs__.quit()
+            self.__calc_apbs__.wait()
+
+        self.__runapbs_progress_dialog__.close()
 
     def configure(self):
 

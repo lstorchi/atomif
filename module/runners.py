@@ -99,7 +99,7 @@ class runcudialog(QtWidgets.QDialog):
 
         self.close()
 
-class runcu_thread(QThread):
+class run_thread(QThread):
     """
     Runs a counter thread.
     """
@@ -110,10 +110,15 @@ class runcu_thread(QThread):
     __weights__ = None 
     __pweights__ = None
     __runcu_done__ = False
+    __runapbs_done__ = False
 
-    def is_done(self):
+    def cu_is_done (self):
 
-        return self.__runcu_done__
+        return self.__runcu_done__ 
+
+    def apbs_is_done (self):
+
+        return self.__runapbs_done__ 
 
     def get_carboidxs (self):
 
@@ -125,10 +130,18 @@ class runcu_thread(QThread):
         else:
             return None, None, None, None
 
-    def configure (self, ddieletric, axis, \
+    def configure (self, typeofrun, ddieletric, axis, \
         firstmolsset, firstmol2file, firstweightsset, \
         secondmolsset, secondmol2file, secondweightsset, \
-        stepval, deltaval, exportdx, workdir, progress): 
+        stepval, deltaval, exportdx, workdir, progress,
+        gridbin = "", fixpdbin = "", apbsbin = "", obabelbin = ""): 
+
+        self.__gridbin__ = gridbin
+        self.__fixpdbin__ = fixpdbin
+        self.__apbsbin__ = apbsbin
+        self.__obabelbin__ = obabelbin
+
+        self.__type_of_run__ = typeofrun
 
         self.__ddieletric__ = ddieletric
         self.__axis__ = axis
@@ -148,18 +161,23 @@ class runcu_thread(QThread):
 
         self.__progress__ = progress
 
-    def run(self):
+    def run (self):
 
         self.count_changed.emit(0)
 
         self.__progress__.set_label("Running first set of molecules")
 
-        cfields1 = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
-            self.__deltaval__ ,  1.0, False, self.__ddieletric__, \
-                self.count_changed, self.__progress__, 0, 45 )
+        cfields1 = None
 
-        if self.__progress__.was_cancelled():
-            return 
+        if self.__type_of_run__ == 1:
+            cfields1 = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
+                self.__deltaval__ ,  1.0, False, self.__ddieletric__, \
+                    self.count_changed, self.__progress__, 0, 45 )
+        elif self.__type_of_run__ == 2:
+            cfields1 = fields.get_apbsfields(self.__firstmol2file__ , self.__stepval__, \
+                self.__deltaval__ , self.__workdir__ , False, self.count_changed, \
+                    self.__progress__, 0, 45 )
+
 
         self.count_changed.emit(45)
 
@@ -223,15 +241,9 @@ class runcu_thread(QThread):
 
                 self.count_changed.emit(100)
 
-                self.__runcu_done__ = True
+                if self.__type_of_run__ == 1:
+                    self.__runcu_done__ = True
 
-                #print(self.__carboidxs__)
-                  
-                #stdev = carboidxs.std(0)
-                #meanmtx = carboidxs.mean(0)
-               
-                #waverage = numpy.average(carboidxs, 0, weights)
-                #wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
             except Exception as exp:
                 self.__carboidxs__ = None 
                 self.__refpoints__ = None 
@@ -239,8 +251,7 @@ class runcu_thread(QThread):
                 self.__pweights__ = None
                 
                 QtWidgets.QMessageBox.critical( self, \
-                    "ERROR", \
-                        exp) 
+                    "ERROR", exp) 
 
         
 class progressdia (QDialog):
