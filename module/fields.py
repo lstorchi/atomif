@@ -2,11 +2,13 @@ import numpy
 import scipy.spatial
 
 import os
-import sys 
+import glob
 import numpy 
 import subprocess
 
 from gridData import Grid
+
+import psize
 
 ############################################################### 
 
@@ -182,9 +184,9 @@ def exporttodx (basename, cfields, weights, stepvalue, \
 
 ###############################################################
 
-def get_apbsfields (mol2name, STEPVAL, DELTAVAL, workdir, \
-    verbose = False, progress = None, checkcancel = None, \
-        startwith = 0, tot = 100 ):
+def get_apbsfields (obabelbin, apbsbin, exportdx, mol2name, \
+    weightsset, STEPVAL, DELTAVAL, workdir, verbose = False, progress = None, \
+    checkcancel = None, startwith = 0, tot = 100 , tofitw = None, flat = False):
 
     if progress != None:
         progress.emit(startwith)
@@ -195,121 +197,143 @@ def get_apbsfields (mol2name, STEPVAL, DELTAVAL, workdir, \
     basename = os.path.splitext(mol2name)[0]
     basename  = basename.split("/")[-1]
 
-    result = subprocess.run("obabel -imol2 "+  mol2name + \
+    listafnames = glob.glob(workdir+"/"+"*.pqr")
+    for fname in listafnames:
+        os.remove(fname)
+
+    result = subprocess.run(obabelbin + " -imol2 "+  mol2name + \
         " -opqr -O " + workdir + "/" + basename+".pqr -m ", shell=True, check=True, \
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,  \
                 universal_newlines=True)
+
+    numoffiles = 0
+    for line in result.stderr.split("\n"):
+        if line.find("files output. The first is") > 0:
+            numoffiles = int(line.split()[0])
                 
     if checkcancel != None:
         if checkcancel.was_cancelled():
-            return None
+            return None, None 
     
-    """
-    for idx, fname in enumerate(listafp):
+    listafnames = glob.glob(workdir+"/"+"*.pqr")
+    if len(listafnames) != numoffiles:
+        return None, None 
 
-        basename = os.path.splitext(fname.split()[0])[0]
-    
-        mols = carbo.mol2atomextractor(args.file, True)
+    allfields = []
+
+    for idx, fname in enumerate(listafnames):
+        if verbose:
+            print("Considering ", fname)
+
+        if checkcancel != None:
+            if checkcancel.was_cancelled():
+                return None, None 
         
-        print("Producing PQR files")
-        result = subprocess.run("obabel -imol2 "+  basename+ ".mol2 " + \
-                "-opqr -O " + basename+".pqr", shell=True, check=True, \
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,  \
-                        universal_newlines=True)
-    
-        idx = 1
-        for pqrname in glob.glob(basename+"*.pqr"):
-            print("Considering ", pqrname)
-            result = subprocess.run("python2 "+ psizepath + " " \
-                    + pqrname, shell=True, check=True, \
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
-                    universal_newlines=True)
-            #Dimensions = 52.547 x 39.477 x 45.994 A
-            #Center = 4.364 x 0.383 x 3.017 A
-            #Lower corner = -21.910 x -19.356 x -19.980 A
-            #Upper corner = 30.637 x 20.121 x 26.014 A
-            #Coarse grid dims = 89.330 x 67.111 x 78.190 A
-            #Fine grid dims = 72.547 x 59.477 x 65.994 A
-            #Num. fine grid pts. = 161 x 129 x 129
-            lines = result.stdout.split("\n")
-            for line in lines:
-                if line.find("Num. fine grid pts.") >= 0:
-                    sline = line.split("=")[1].replace("A", "")
-                    dime = [numpy.int(x) for x in sline.split("x")]
-                if line.find("Coarse grid dims") >= 0:
-                    sline = line.split("=")[1].replace("A", "")
-                    cglen = [numpy.float(x) for x in sline.split("x")]
-                if line.find("Fine grid dims") >= 0:
-                    sline = line.split("=")[1].replace("A", "")
-                    fglen = [numpy.float(x) for x in sline.split("x")]
-                if line.find("Center") >= 0:
-                    sline = line.split("=")[1].replace("A", "")
-                    gcent = [numpy.float(x) for x in sline.split("x")]
-    
-            # generate input for APBS
-            fp = open(basename + ".in","w") 
-    
-            fp.write("read\n")
-            fp.write("   mol pqr "+ pqrname +"\n")
-            fp.write("end\n")
-            fp.write("elec\n")
-            fp.write("   mg-auto\n")
-            fp.write("   dime   %5d %5d %5d\n"%(dime[0], dime[1], dime[2]))
-            fp.write("   cglen  %12.6f %12.6f %12.6f\n"%(cglen[0], cglen[1], cglen[2]))
-            fp.write("   fglen  %12.6f %12.6f %12.6f\n"%(fglen[0], fglen[1], fglen[2]))
-            fp.write("   cgcent %12.6f %12.6f %12.6f\n"%(gcent[0], gcent[1], gcent[2]))
-            fp.write("   fgcent %12.6f %12.6f %12.6f\n"%(gcent[0], gcent[1], gcent[2]))
-            fp.write("   lpbe\n")
-            fp.write("   bcfl sdh\n")
-            if not args.flat:
-                fp.write("   ion charge  1 conc 0.150000 radius 2.000000\n") 
-                fp.write("   ion charge -1 conc 0.150000 radius 1.800000\n")
-                fp.write("   ion charge  2 conc 0.000000 radius 2.000000\n")
-                fp.write("   ion charge -2 conc 0.000000 radius 2.000000\n")
-                fp.write("   pdie 2.000000\n") 
-                fp.write("   sdie 78.000000\n")
-            else:
-                fp.write("   ion charge  1 conc 0.000000 radius 2.000000\n") 
-                fp.write("   ion charge -1 conc 0.000000 radius 1.800000\n")
-                fp.write("   ion charge  2 conc 0.000000 radius 2.000000\n")
-                fp.write("   ion charge -2 conc 0.000000 radius 2.000000\n")
-                fp.write("   pdie 1.000000\n")
-                fp.write("   sdie 1.000000\n")
-            fp.write("   chgm spl2\n")
-            fp.write("   mol 1\n")
-            fp.write("   srfm smol\n")
-            fp.write("   srad 1.400000\n")
-            fp.write("   swin 0.3\n")
-            if not args.flat:
-                fp.write("   temp 310.000000\n") 
-            else:
-                fp.write("   temp  0.100000\n") 
-            fp.write("   sdens 10.000000\n")
-            fp.write("   calcenergy no\n")
-            fp.write("   calcforce no\n") 
-            if not args.flat:
-                fp.write("   write pot dx "+basename+"\n")  
-            else:
-                fp.write("   write pot dx "+basename+"_flat\n")  
-            fp.write("end\n")
-            fp.write("quit\n")
-            fp.close()
-    
-            print("Running APBS")
-            result = subprocess.run(apbspath + " " + basename + ".in" , \
-                     shell=True, check=True, \
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
-                    universal_newlines=True)
-    
-            os.remove(basename + ".in")
-            os.remove(pqrname)
-            os.remove("io.mc")
-            idx += 1
-    
-    listafp.close()
+        if progress != None:
+            where = int(startwith + ((tot - 0.05*tot) * ((idx+1)/len(listafnames))))
+            progress.emit(where)
 
-    num = idx - 1
-    print("Start interpolate ")
+        psizeist = psize.Psize()
+
+        psizeist.runPsize(fname)
+
+        lines = psizeist.printResults().split("\n")
+
+        dime = None
+        cglen = None
+        fglen = None
+        gcent = None
+        for line in lines:
+            if line.find("Num. fine grid pts.") >= 0:
+                sline = line.split("=")[1].replace("A", "")
+                dime = [numpy.int(x) for x in sline.split("x")]
+            if line.find("Coarse grid dims") >= 0:
+                sline = line.split("=")[1].replace("A", "")
+                cglen = [numpy.float(x) for x in sline.split("x")]
+            if line.find("Fine grid dims") >= 0:
+                sline = line.split("=")[1].replace("A", "")
+                fglen = [numpy.float(x) for x in sline.split("x")]
+            if line.find("Center") >= 0:
+                sline = line.split("=")[1].replace("A", "")
+                gcent = [numpy.float(x) for x in sline.split("x")]
+        
+        if verbose:
+            print(dime, cglen, fglen, gcent)
+
+        fp = open(workdir + "/" + basename + ".in","w") 
+    
+        fp.write("read\n")
+        fp.write("   mol pqr "+ fname +"\n")
+        fp.write("end\n")
+        fp.write("elec\n")
+        fp.write("   mg-auto\n")
+        fp.write("   dime   %5d %5d %5d\n"%(dime[0], dime[1], dime[2]))
+        fp.write("   cglen  %12.6f %12.6f %12.6f\n"%(cglen[0], cglen[1], cglen[2]))
+        fp.write("   fglen  %12.6f %12.6f %12.6f\n"%(fglen[0], fglen[1], fglen[2]))
+        fp.write("   cgcent %12.6f %12.6f %12.6f\n"%(gcent[0], gcent[1], gcent[2]))
+        fp.write("   fgcent %12.6f %12.6f %12.6f\n"%(gcent[0], gcent[1], gcent[2]))
+        fp.write("   lpbe\n")
+        fp.write("   bcfl sdh\n")
+        if not flat:
+            fp.write("   ion charge  1 conc 0.150000 radius 2.000000\n") 
+            fp.write("   ion charge -1 conc 0.150000 radius 1.800000\n")
+            fp.write("   ion charge  2 conc 0.000000 radius 2.000000\n")
+            fp.write("   ion charge -2 conc 0.000000 radius 2.000000\n")
+            fp.write("   pdie 2.000000\n") 
+            fp.write("   sdie 78.000000\n")
+        else:
+            fp.write("   ion charge  1 conc 0.000000 radius 2.000000\n") 
+            fp.write("   ion charge -1 conc 0.000000 radius 1.800000\n")
+            fp.write("   ion charge  2 conc 0.000000 radius 2.000000\n")
+            fp.write("   ion charge -2 conc 0.000000 radius 2.000000\n")
+            fp.write("   pdie 1.000000\n")
+            fp.write("   sdie 1.000000\n")
+        fp.write("   chgm spl2\n")
+        fp.write("   mol 1\n")
+        fp.write("   srfm smol\n")
+        fp.write("   srad 1.400000\n")
+        fp.write("   swin 0.3\n")
+        if not flat:
+            fp.write("   temp 310.000000\n") 
+        else:
+            fp.write("   temp  0.100000\n") 
+        fp.write("   sdens 10.000000\n")
+        fp.write("   calcenergy no\n")
+        fp.write("   calcforce no\n") 
+        dxname = ""
+        if not flat:
+            dxname = workdir + "/" + basename
+        else:
+            dxname = workdir + "/" +basename+ "_flat"
+
+        fp.write("   write pot dx " + dxname + "\n")
+        fp.write("end\n")
+        fp.write("quit\n")
+        fp.close()
+    
+        if verbose:
+            print("Running APBS")
+
+        result = subprocess.run(apbsbin + " " + workdir + "/" + basename + ".in" , \
+                 shell=True, check=True, \
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
+                universal_newlines=True)
+
+        g = Grid(dxname + ".dx")
+        allfields.append(g)
+
+        os.remove(dxname + ".dx")
+        os.remove(workdir + "/" + basename + ".in")
+        os.remove(fname)
+        os.remove("io.mc")
+
+        if checkcancel != None:
+            if checkcancel.was_cancelled():
+                return None, None 
+
+    if verbose:
+        print("Start interpolate ")
+    
     deltamax = float("-inf")
     x1 = []
     x2 = []
@@ -318,11 +342,7 @@ def get_apbsfields (mol2name, STEPVAL, DELTAVAL, workdir, \
     z1 = []
     z2 = []
 
-    listafp = open(args.file)
-    for fname in listafp:
-        basename = os.path.splitext(fname.split()[0])[0]
-        dxname = basename+".dx"
-        g = Grid(dxname)
+    for g in allfields:
         m = max(g.delta)
         if m > deltamax:
             deltamax = m
@@ -336,8 +356,6 @@ def get_apbsfields (mol2name, STEPVAL, DELTAVAL, workdir, \
         z1.append(g.origin[2])
         z2.append(g.origin[2] + (g.grid.shape[2]-1)*g.delta[2])
 
-    listafp.close()
-
     xmin = min(x1)
     ymin = min(y1)
     zmin = min(z1)
@@ -345,72 +363,85 @@ def get_apbsfields (mol2name, STEPVAL, DELTAVAL, workdir, \
     ymax = max(y2)
     zmax = max(z2)
 
-    if args.stepval > 0.0:
-        deltamax = args.stepval
+    deltamax = STEPVAL
 
-    print("New Grid %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f"%(\
-        deltamax, xmin, xmax, ymin, ymax, zmin, zmax))
+    if verbose:
+        print("New Grid %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f"%(\
+            deltamax, xmin, xmax, ymin, ymax, zmin, zmax))
+    
     XX, YY, ZZ = numpy.mgrid[xmin:xmax:deltamax, \
         ymin:ymax:deltamax, zmin:zmax:deltamax]
 
-    print("Start to intepolate")
+    if checkcancel != None:
+        if checkcancel.was_cancelled():
+            return None, None 
 
-    alldata = {}
-    allweig = {}
+    if verbose:
+        print("Start to intepolate")
+
     shapes = None
     norig = None
 
-    sumwei = 0.0
-    listafp = open(args.file)
-    for fname in listafp:
-        basename = os.path.splitext(fname.split()[0])[0]
-        dxname = basename+".dx"
-        print("Considering ", dxname)
-        g = Grid(dxname)
+    for idx, g in enumerate(allfields):
         norig = [XX[0][0][0], YY[0][0][0], ZZ[0][0][0]]
-        #print(g.origin, norig)
         nf = g.interpolated(XX, YY, ZZ)
         ng = Grid(nf, origin=norig , \
            delta=[deltamax, deltamax, deltamax])
-        alldata[dxname] = ng
-        allweig[dxname] = float(fname.split()[1])
-        sumwei += float(fname.split()[1])
+        allfields[idx] = ng
         shapes = nf.shape
 
-    listafp.close()
+    if checkcancel != None:
+        if checkcancel.was_cancelled():
+            return None, None 
 
     mep = numpy.zeros(shapes)
 
-    idx =  1
-    for name in alldata:
-        mep += alldata[name].grid * allweig[name]
-        newname = name 
-        if args.flat:
-            newname = name[:-3]+"_flat.dx"
-        print(newname + " %8.3f"%(allweig[name]), file=sys.stderr )
-        alldata[name].export(newname)
+    finalset = {}
+
+    for idx, g in enumerate(allfields):
+        mep += g.grid * weightsset[idx]
+
+        keyname = basename + "_" + str(idx+1)
+
+        newname =  workdir + "/" + basename + "_" + \
+            str(idx+1) + ".dx"
+        if flat:
+            newname =  workdir + "/" + basename + "_" + \
+                tr(idx+1) + "_flat.dx"
+ 
+        if exportdx:
+            g.export(newname)
 
         if tofitw != None:
-          g_on = alldata[name].resample(tofitw)
-          os.remove(newname)
-          g_on.export(newname)
+            g_on = g.resample(tofitw)
 
-        idx += 1
+            allfields[idx] = g_on
 
-    basename = os.path.splitext(args.file.split()[0])[0]
+            if exportdx:
+                g_on.export(newname)
+        
+        finalset[keyname] = (weightsset[idx], g)
+        
 
-    mep = mep/sumwei
-    g = Grid(mep, origin=norig, \
+    if checkcancel != None:
+        if checkcancel.was_cancelled():
+            return None, None 
+
+    mep = mep
+    gmean = Grid(mep, origin=norig, \
       delta=[deltamax, deltamax, deltamax])
-    name = basename + "_mean.dx"
-    if args.flat:
-        name = basename + "_flat_mean.dx"
-    g.export(name)
+    
+    if exportdx:
+        name = workdir + "/" + basename + "_mean.dx"
+        if flat:
+            name = workdir + "/" + basename + "_flat_mean.dx"
+        gmean.export(name)
 
-    if tofitw != None:
-        g_on = g.resample(tofitw)
-        os.remove(name)
-        g_on.export(name)
+        if tofitw != None:
+            g_on = gmean.resample(tofitw)
+            g_on.export(name)
+ 
+    where = startwith + tot
+    progress.emit(where)
 
-    # python2 psize.py  test.pqr to get cage for APBS
-    """
+    return gmean, finalset

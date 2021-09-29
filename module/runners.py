@@ -168,61 +168,74 @@ class run_thread(QThread):
         self.__progress__.set_label("Running first set of molecules")
 
         cfields1 = None
+        allfields1 = None
+        gmean1 = None 
 
         if self.__type_of_run__ == 1:
             cfields1 = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
                 self.__deltaval__ ,  1.0, False, self.__ddieletric__, \
                     self.count_changed, self.__progress__, 0, 45 )
+           
+            if (cfields1 != None):
+                basename = os.path.splitext(self.__firstmol2file__)[0]
+                basename  = basename.split("/")[-1]
+           
+                if self.__progress__.was_cancelled():
+                    return 
+           
+                gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                         cfields1, self.__firstweightsset__ , self.__stepval__, self.__ddieletric__, \
+                            self.__exportdx__, None)
+           
+            self.count_changed.emit(50)
+
         elif self.__type_of_run__ == 2:
-            cfields1 = fields.get_apbsfields(self.__firstmol2file__ , self.__stepval__, \
-                self.__deltaval__ , self.__workdir__ , False, self.count_changed, \
-                    self.__progress__, 0, 45 )
+            gmean1, allfields1 = fields.get_apbsfields(self.__obabelbin__, self.__apbsbin__ , \
+                self.__exportdx__ , self.__firstmol2file__ , self.__firstweightsset__, \
+                    self.__stepval__, self.__deltaval__ , \
+                    self.__workdir__ , False, self.count_changed, \
+                        self.__progress__, 0, 45 )
 
 
         self.count_changed.emit(45)
 
-        gmean1 = None 
-        allfields1 = None
-
-        if (cfields1 != None):
-            basename = os.path.splitext(self.__firstmol2file__)[0]
-            basename  = basename.split("/")[-1]
-
-            if self.__progress__.was_cancelled():
-                return 
-
-            gmean1, allfields1 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                     cfields1, self.__firstweightsset__ , self.__stepval__, self.__ddieletric__, \
-                        self.__exportdx__, None)
-
-        self.count_changed.emit(50)
-
-        gmean2 = None 
-        allfields2 = None
-
         self.__progress__.set_label("Running second set of molecules")
 
         if (allfields1 != None):
-            
+           
             if (self.__progress__.was_cancelled()):
               return  
 
-            cfields2 = fields.get_cfields(self.__secondmolsset__, self.__stepval__, \
-                self.__deltaval__, 1.0, False, self.__ddieletric__, self.count_changed, \
-                    self.__progress__, 50, 45 )
+            allfields2 = None
+            gmean2 = None 
 
-            if (cfields2 != None):
-                basename = os.path.splitext(self.__secondmol2file__)[0]
-                basename  = basename.split("/")[-1]
+            if self.__type_of_run__ == 1:
 
-                if self.__progress__.was_cancelled():
-                    return 
-
-                gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
-                        cfields2, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
-                            self.__exportdx__, \
-                                list(allfields1.values())[0][1]) # fit respect to the first one so we can compute carbo
+                cfields2 = fields.get_cfields(self.__secondmolsset__, self.__stepval__, \
+                    self.__deltaval__, 1.0, False, self.__ddieletric__, self.count_changed, \
+                        self.__progress__, 50, 45 )
             
+                if (cfields2 != None):
+                    basename = os.path.splitext(self.__secondmol2file__)[0]
+                    basename  = basename.split("/")[-1]
+            
+                    if self.__progress__.was_cancelled():
+                        return 
+            
+                    gmean2, allfields2 = fields.exporttodx (self.__workdir__ + "/" + basename, \
+                            cfields2, self.__secondweightsset__ , self.__stepval__, self.__ddieletric__, \
+                                self.__exportdx__, \
+                                    list(allfields1.values())[0][1]) # fit respect to the first one so we can compute carbo
+                
+                    self.count_changed.emit(100)
+            elif self.__type_of_run__ == 2:
+
+                gmean2, allfields2 = fields.get_apbsfields(self.__obabelbin__, self.__apbsbin__ , \
+                    self.__exportdx__ , self.__secondmol2file__ , self.__secondweightsset__, \
+                        self.__stepval__, self.__deltaval__ , \
+                        self.__workdir__ , False, self.count_changed, \
+                            self.__progress__, 50, 45, list(allfields1.values())[0][1]) 
+
                 self.count_changed.emit(100)
 
         if (allfields1 != None) and (allfields2 != None):
@@ -243,6 +256,10 @@ class run_thread(QThread):
 
                 if self.__type_of_run__ == 1:
                     self.__runcu_done__ = True
+                elif self.__type_of_run__ == 2:
+                    self.__runapbs_done__ = True
+
+                print(self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__)
 
             except Exception as exp:
                 self.__carboidxs__ = None 

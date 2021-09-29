@@ -152,7 +152,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__runapbs_progress_dialog__.show()
             self.__runapbs_progress_dialog__.set_value(0)
             self.__runapbs_progress_dialog__.set_title("Run Coulumb")
-            self.__runapbs_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
+            self.__runapbs_progress_dialog__.cancel_signal.connect(self.runapbs_cancel)
 
             self.__calc_apbs__ = runners.run_thread()
             self.__calc_apbs__ .configure (2, False, axis, \
@@ -321,7 +321,7 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__runcu_progress_dialog__.close()
 
-    def runapsb_cancel(self):
+    def runapbs_cancel(self):
 
         self.__calc_apbs__.m_abort = True
         if not self.__calc_apbs__.wait(5000):
