@@ -155,7 +155,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__runapbs_progress_dialog__.cancel_signal.connect(self.runapbs_cancel)
 
             self.__calc_apbs__ = runners.run_thread()
-            self.__calc_apbs__ .configure (2, False, axis, \
+            self.__calc_apbs__ .configure (runners.TYPEOFRUNAPBS, False, axis, \
                 self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
                 self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
                 stepval, deltaval, exportdx, self.__workdir__, \
@@ -195,7 +195,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
            
             self.__calc_cu__ = runners.run_thread()
-            self.__calc_cu__ .configure (1, ddieletric, axis, \
+            self.__calc_cu__ .configure (runners.TYPEOFRUNCOULOMB, ddieletric, axis, \
                 self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
                 self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
                 stepval, deltaval, exportdx, self.__workdir__, \
@@ -215,7 +215,50 @@ class main_window(QtWidgets.QMainWindow):
         self.__runapbs_progress_dialog__.close()
 
         if self.__calc_apbs__.apbs_is_done():
-            return
+            carboidxs, refpoints, weights, pweights = self.__calc_apbs__.get_carboidxs()
+           
+            stdev = carboidxs.std(0)
+            meanmtx = carboidxs.mean(0)
+            
+            waverage = numpy.average(carboidxs, 0, weights)
+            wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+            
+            pwaverage = numpy.average(carboidxs, 0, pweights)
+            pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+           
+            if self.__plot_done__ :
+                self.__ax__.cla()
+                self.__canvas__.draw()
+                self.__plot_done__ = False
+            else:
+                self.__ax__ = self.__figure__.add_subplot(111)
+           
+            self.__ax__.set_ylim([-1.0, 1.0])
+           
+            self.__ax__.errorbar(refpoints, meanmtx, stdev,  linestyle='None', \
+                marker='^', label="Mean and stdev")
+            self.__ax__.plot(refpoints, meanmtx, linestyle='--')
+            
+            self.__ax__.errorbar(refpoints, waverage, wvariance,  linestyle='None', \
+                marker='^', label="Weighted Mean and stdev")
+            self.__ax__.plot(refpoints, waverage, linestyle='--')
+           
+            self.__ax__.errorbar(refpoints, pwaverage, pwvariance,  linestyle='None', \
+                marker='^', label="PWeighted Mean and stdev")
+            self.__ax__.plot(refpoints, pwaverage, linestyle='--')
+           
+            self.__ax__.legend(loc="lower left")
+           
+            self.__canvas__.draw()
+            self.__plot_done__ = True
+           
+            self.__savefile_runapbs__.setEnabled(True)
+            self.__runapbs_done__ = True
+           
+            self.__runapsb_carboidxs__ = carboidxs
+            self.__runapsb_refpoints__ = refpoints
+            self.__runapsb_weights__ = weights
+            self.__runapsb_pweights__ = pweights
 
     def runcu_finished(self):
         self.__calc_cu__.wait()
@@ -277,7 +320,29 @@ class main_window(QtWidgets.QMainWindow):
 
             if (len(name) == 2):
                 if (name[0] != ""):
-                    return
+                    carboidxs, refpoints, weights, pweights = self.__calc_apbs__.get_carboidxs()
+          
+                    stdev = carboidxs.std(0)
+                    meanmtx = carboidxs.mean(0)
+                    
+                    waverage = numpy.average(carboidxs, 0, weights)
+                    wvariance = numpy.average((carboidxs-waverage)**2, 0, weights)
+                    
+                    pwaverage = numpy.average(carboidxs, 0, pweights)
+                    pwvariance = numpy.average((carboidxs-waverage)**2, 0, pweights)
+          
+                    file = open(name[0],'w')
+
+                    axis = self.__runcu_dialog__.axis_line.text()
+          
+                    file.write("%13s %13s %13s %13s %13s %13s %13s\n"%(axis, "SMean",  \
+                        "SStdev", "WMean", "WStdev", "PWMean", "PWStdev"))
+                    for idx, std in enumerate(stdev):
+                        file.write("%+8.6e %+8.6e %+8.6e %+8.6e %+8.6e %+8.6e %+8.6e\n"%(\
+                            refpoints[idx], meanmtx[idx] , std, waverage[idx], \
+                                wvariance[idx], pwaverage[idx], pwvariance[idx] ))
+          
+                    file.close()         
 
     def runcu_savefile(self):
 

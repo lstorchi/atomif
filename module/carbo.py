@@ -97,7 +97,7 @@ def returncarbodxs(set1, set2, verbose=False, axis="x", \
                         elif aidx3 == 2:
                             iz = k
                             z = g1.origin[aidx3] + k*g1.delta[aidx3]
-                        
+
                         num = num + g1.grid[ix, iy, iz]*g2.grid[ix, iy, iz]
                         denum1 = denum1 + g1.grid[ix, iy, iz]*g1.grid[ix, iy, iz]
                         denum2 = denum2 + g2.grid[ix, iy, iz]*g2.grid[ix, iy, iz]

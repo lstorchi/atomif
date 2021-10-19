@@ -420,7 +420,9 @@ def get_apbsfields (obabelbin, apbsbin, exportdx, mol2name, \
             if exportdx:
                 g_on.export(newname)
         
-        finalset[keyname] = (weightsset[idx], g)
+            finalset[keyname] = (weightsset[idx], g_on)
+        else:
+            finalset[keyname] = (weightsset[idx], g)
         
 
     if checkcancel != None:

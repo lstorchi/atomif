@@ -6,6 +6,9 @@ import os
 import carbo
 import fields
 
+TYPEOFRUNCOULOMB = 1
+TYPEOFRUNAPBS = 2
+
 class runapbsdialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
@@ -122,7 +125,7 @@ class run_thread(QThread):
 
     def get_carboidxs (self):
 
-        if self.__runcu_done__ :
+        if self.__runcu_done__  or self.__runapbs_done__:
             return self.__carboidxs__ , \
                 self.__refpoints__ , \
                     self.__weights__ , \
@@ -171,7 +174,7 @@ class run_thread(QThread):
         allfields1 = None
         gmean1 = None 
 
-        if self.__type_of_run__ == 1:
+        if self.__type_of_run__ == TYPEOFRUNCOULOMB:
             cfields1 = fields.get_cfields(self.__firstmolsset__, self.__stepval__, \
                 self.__deltaval__ ,  1.0, False, self.__ddieletric__, \
                     self.count_changed, self.__progress__, 0, 45 )
@@ -189,7 +192,7 @@ class run_thread(QThread):
            
             self.count_changed.emit(50)
 
-        elif self.__type_of_run__ == 2:
+        elif self.__type_of_run__ == TYPEOFRUNAPBS:
             gmean1, allfields1 = fields.get_apbsfields(self.__obabelbin__, self.__apbsbin__ , \
                 self.__exportdx__ , self.__firstmol2file__ , self.__firstweightsset__, \
                     self.__stepval__, self.__deltaval__ , \
@@ -209,7 +212,7 @@ class run_thread(QThread):
             allfields2 = None
             gmean2 = None 
 
-            if self.__type_of_run__ == 1:
+            if self.__type_of_run__ == TYPEOFRUNCOULOMB:
 
                 cfields2 = fields.get_cfields(self.__secondmolsset__, self.__stepval__, \
                     self.__deltaval__, 1.0, False, self.__ddieletric__, self.count_changed, \
@@ -228,7 +231,7 @@ class run_thread(QThread):
                                     list(allfields1.values())[0][1]) # fit respect to the first one so we can compute carbo
                 
                     self.count_changed.emit(100)
-            elif self.__type_of_run__ == 2:
+            elif self.__type_of_run__ == TYPEOFRUNAPBS:
 
                 gmean2, allfields2 = fields.get_apbsfields(self.__obabelbin__, self.__apbsbin__ , \
                     self.__exportdx__ , self.__secondmol2file__ , self.__secondweightsset__, \
@@ -247,6 +250,14 @@ class run_thread(QThread):
 
             self.count_changed.emit(0)
 
+            """
+            for k in allfields1:
+                print(k, allfields1[k][1].grid.shape)
+
+            for k in allfields2:
+                print(k, allfields2[k][1].grid.shape)
+            """
+
             try:
                 self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__ = \
                   carbo.returncarbodxs(allfields1, allfields2, False, self.__axis__, \
@@ -254,12 +265,12 @@ class run_thread(QThread):
 
                 self.count_changed.emit(100)
 
-                if self.__type_of_run__ == 1:
+                if self.__type_of_run__ == TYPEOFRUNCOULOMB:
                     self.__runcu_done__ = True
-                elif self.__type_of_run__ == 2:
+                elif self.__type_of_run__ == TYPEOFRUNAPBS:
                     self.__runapbs_done__ = True
 
-                print(self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__)
+                #print(self.__carboidxs__, self.__refpoints__, self.__weights__, self.__pweights__)
 
             except Exception as exp:
                 self.__carboidxs__ = None 
