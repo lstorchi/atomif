@@ -26,6 +26,8 @@ class main_window(QtWidgets.QMainWindow):
         self.__runapbs_weights__ = None
         self.__runapbs_pweights__ = None
 
+        self.__runmifprofiles__done__ = False
+
         self.__workdir__ = "./"
         self.__gridbin__ = "./grid"
         self.__fixpdbin__ = "./fixpdb"
@@ -64,6 +66,11 @@ class main_window(QtWidgets.QMainWindow):
         self.__savefile_runapbs__.triggered.connect(self.runapbs_savefile)
         self.__savefile_runapbs__.setEnabled(False)
 
+        self.__savefile_runmifprofiles__ = QtWidgets.QAction(QtGui.QIcon("icons/save.png"), "Save MIF profiles file", self)
+        self.__savefile_runmifprofiles__.setStatusTip("Save file MIF Profiles")
+        self.__savefile_runmifprofiles__.triggered.connect(self.runmifprofiles_savefile)
+        self.__savefile_runmifprofiles__.setEnabled(False)
+
         sep = QtWidgets.QAction(self)
         sep.setSeparator(True)
 
@@ -77,15 +84,17 @@ class main_window(QtWidgets.QMainWindow):
         config.setStatusTip("Configure")
         config.triggered.connect(self.configure)
 
-        runcu = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run Coulomb Carboi Index", self)
-        runcu.setShortcut("Ctrl+R")
+        runcu = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run Coulomb Carbo Index", self)
         runcu.setStatusTip("Run the Carbo index using the Coulomb's law ")
         runcu.triggered.connect(self.runcu)      
 
-        runapbs = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run APBS Carboi Index", self)
-        runapbs.setShortcut("Ctrl+R")
+        runapbs = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run APBS Carbo Index", self)
         runapbs.setStatusTip("Run the Carbo index using APBS ")
         runapbs.triggered.connect(self.runapbs)      
+
+        runmifprofiles = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run MIF Profiles", self)
+        runmifprofiles.setStatusTip("Run the MIF profiles ")
+        runmifprofiles.triggered.connect(self.runmifprofiles)      
 
         self.statusBar().show()
 
@@ -96,6 +105,7 @@ class main_window(QtWidgets.QMainWindow):
         file.addAction(sep)
         file.addAction(self.__savefile_runcu__)
         file.addAction(self.__savefile_runapbs__) 
+        file.addAction(self.__savefile_runmifprofiles__)
         file.addAction(sep)
         file.addAction(quit)
 
@@ -105,6 +115,7 @@ class main_window(QtWidgets.QMainWindow):
         run = menubar.addMenu('&Compute')
         run.addAction(runcu)
         run.addAction(runapbs)
+        run.addAction(runmifprofiles)
 
         help = menubar.addMenu('&Help')
 
@@ -125,6 +136,7 @@ class main_window(QtWidgets.QMainWindow):
         self.__configure_dialog__ = options.configure(self)
         self.__runcu_dialog__ = runners.runcudialog(self)
         self.__runapbs_dialog__ = runners.runapbsdialog(self)
+        self.__runmifprofiles_dialog__ = runners.runmifprofilesdialog(self)
 
         self.__workdir__ = self.__configure_dialog__.workdir_line.text()
         self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
@@ -132,6 +144,17 @@ class main_window(QtWidgets.QMainWindow):
         self.__apbsbin__ = self.__configure_dialog__.apbsbin_line.text()
         self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
 
+    def runmifprofiles (self):
+        self.__savefile_runmifprofiles__.setEnabled(False)
+        self.__runmifprofiles__done__ = False
+
+        if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
+            self.__runmifprofiles_dialog__.setWindowTitle("Run MIF profiles")
+            
+            self.__runmifprofiles_dialog__.exec()
+
+            print("TO BE IMPLEMENTED")
+ 
     def runapbs (self):
         self.__savefile_runapbs__.setEnabled(False)
         self.__runapbs_done__ = False
@@ -154,7 +177,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__runapbs_progress_dialog__.set_title("Run Coulumb")
             self.__runapbs_progress_dialog__.cancel_signal.connect(self.runapbs_cancel)
 
-            self.__calc_apbs__ = runners.run_thread()
+            self.__calc_apbs__ = runners.run_thread_ci()
             self.__calc_apbs__ .configure (runners.TYPEOFRUNAPBS, False, axis, \
                 self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
                 self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
@@ -194,7 +217,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_progress_dialog__.set_title("Run Coulumb")
             self.__runcu_progress_dialog__.cancel_signal.connect(self.runcu_cancel)
            
-            self.__calc_cu__ = runners.run_thread()
+            self.__calc_cu__ = runners.run_thread_ci()
             self.__calc_cu__ .configure (runners.TYPEOFRUNCOULOMB, ddieletric, axis, \
                 self.__firstmolsset__, self.__firstmol2file__, self.__firstweightsset__, \
                 self.__secondmolsset__, self.__secondmol2file__, self.__secondweightsset__, \
@@ -311,6 +334,11 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_refpoints__ = refpoints
             self.__runcu_weights__ = weights
             self.__runcu_pweights__ = pweights
+
+    def runmifprofiles_savefile(self):
+
+        if self.__runmifprofiles__done__ :
+            return
 
     def runapbs_savefile(self):
 
