@@ -9,6 +9,7 @@ import numpy
 import options
 import runners
 import atomiffileio
+import runnersdialog
 
 class main_window(QtWidgets.QMainWindow):
 
@@ -134,9 +135,9 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__options_dialog_files__ = options.optiondialog_files(self)
         self.__configure_dialog__ = options.configure(self)
-        self.__runcu_dialog__ = runners.runcudialog(self)
-        self.__runapbs_dialog__ = runners.runapbsdialog(self)
-        self.__runmifprofiles_dialog__ = runners.runmifprofilesdialog(self)
+        self.__runcu_dialog__ = runnersdialog.runcudialog(self)
+        self.__runapbs_dialog__ = runnersdialog.runapbsdialog(self)
+        self.__runmifprofiles_dialog__ = runnersdialog.runmifprofilesdialog(self)
 
         self.__workdir__ = self.__configure_dialog__.workdir_line.text()
         self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
@@ -153,7 +154,32 @@ class main_window(QtWidgets.QMainWindow):
             
             self.__runmifprofiles_dialog__.exec()
 
-            print("TO BE IMPLEMENTED")
+            stepval = float(self.__runmifprofiles_dialog__.stepval_line.text())
+            deltaval = float(self.__runmifprofiles_dialog__.deltaval_line.text())
+            #exportdx = self.__runapbs_dialog__.exportdxcheckbox.isChecked()
+            axis = self.__runmifprofiles_dialog__.axis_line.text()
+            probe = self.__runmifprofiles_dialog__.probe_line.text()
+            
+            self.__runmifprofiles_progress_dialog__ = runnersdialog.progressdia(self)
+            self.__runmifprofiles_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
+           
+            self.__runmifprofiles_progress_dialog__.show()
+            self.__runmifprofiles_progress_dialog__.set_value(0)
+            self.__runmifprofiles_progress_dialog__.set_title("Run Grid Profiles")
+            self.__runmifprofiles_progress_dialog__.cancel_signal.connect(self.runmifprofiles_cancel)
+
+            self.__calc_mifprofiles__ = runners.run_thread_mif()
+            self.__calc_mifprofiles__ .configure (self.__firstmolsset__, self.__firstmol2file__, \
+                self.__firstweightsset__, self.__secondmolsset__, self.__secondmol2file__, \
+                self.__secondweightsset__, stepval, deltaval, axis, probe, self.__workdir__, \
+                self.__runmifprofiles_progress_dialog__, self.__gridbin__ , self.__fixpdbin__ , \
+                self.__apbsbin__ , self.__obabelbin__ )
+
+            self.__calc_mifprofiles__.count_changed.connect(self.__runmifprofiles_progress_dialog__.on_count_changed)
+            self.__calc_mifprofiles__.finished.connect(self.runmifprofiles_finished)
+            self.__calc_mifprofiles__.start()
+ 
+            return
  
     def runapbs (self):
         self.__savefile_runapbs__.setEnabled(False)
@@ -169,7 +195,7 @@ class main_window(QtWidgets.QMainWindow):
             exportdx = self.__runapbs_dialog__.exportdxcheckbox.isChecked()
             axis = self.__runapbs_dialog__.axis_line.text()
             
-            self.__runapbs_progress_dialog__ = runners.progressdia(self)
+            self.__runapbs_progress_dialog__ = runnersdialog.progressdia(self)
             self.__runapbs_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
            
             self.__runapbs_progress_dialog__.show()
@@ -209,7 +235,7 @@ class main_window(QtWidgets.QMainWindow):
            
             #print(stepval, deltaval, ddieletric)
            
-            self.__runcu_progress_dialog__ = runners.progressdia(self)
+            self.__runcu_progress_dialog__ = runnersdialog.progressdia(self)
             self.__runcu_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
            
             self.__runcu_progress_dialog__.show()
@@ -231,6 +257,15 @@ class main_window(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical( self, \
                     "WARNING", \
                         "No molecules have been specified ") 
+
+    def runmifprofiles_finished(self):
+        self.__calc_mifprofiles__.wait()
+
+        self.__runmifprofiles_progress_dialog__.close()
+
+        if self.__calc_mifprofiles__.mif_is_done():
+            print("TODO")
+
 
     def runapbs_finished(self):
         self.__calc_apbs__.wait()
@@ -403,6 +438,16 @@ class main_window(QtWidgets.QMainWindow):
                                 wvariance[idx], pwaverage[idx], pwvariance[idx] ))
           
                     file.close()         
+
+    def runmifprofiles_cancel(self):
+
+        self.__calc_mifprofiles__.m_abort = True
+        if not self.__calc_mifprofiles__.wait(5000):
+            self.__calc_mifprofiles__.terminate()
+            self.__calc_mifprofiles__.quit()
+            self.__calc_mifprofiles__.wait()
+
+        self.__runmifprofiles_progress_dialog__.close()
 
     def runcu_cancel(self):
 
