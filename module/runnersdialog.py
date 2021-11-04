@@ -125,6 +125,11 @@ class runmifprofilesdialog(QtWidgets.QDialog):
         self.probe_line.move(20, 20)
         self.probe_line.resize(280,40)
 
+        minima_label = QtWidgets.QLabel("Min Energy values : ", self)
+        self.minima_line = QtWidgets.QLineEdit("-1.0", self)
+        self.minima_line.move(20, 20)
+        self.minima_line.resize(280,40)
+
         self.grid = QtWidgets.QGridLayout(self)
         
         self.grid.addWidget(stepval_label, 0, 0)
@@ -139,7 +144,10 @@ class runmifprofilesdialog(QtWidgets.QDialog):
         self.grid.addWidget(probe_label, 2, 0)
         self.grid.addWidget(self.probe_line, 2, 1)
 
-        self.grid.addWidget(self.okbutton, 5, 2)
+        self.grid.addWidget(minima_label, 3, 0)
+        self.grid.addWidget(self.minima_line, 3, 1)
+
+        self.grid.addWidget(self.okbutton, 4, 2)
 
     def run(self):
 

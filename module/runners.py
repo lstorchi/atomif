@@ -3,6 +3,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5 import QtGui, QtWidgets
 
 import os
+import mifs
 import carbo
 import fields
 
@@ -24,7 +25,7 @@ class run_thread_mif(QThread):
     def configure (self, \
         firstmolsset, firstmol2file, firstweightsset, \
         secondmolsset, secondmol2file, secondweightsset, \
-        stepval, deltaval, axis, probe, workdir, progress,
+        stepval, deltaval, axis, probe, minimaselection, workdir, progress,
         gridbin = "", fixpdbin = "", apbsbin = "", obabelbin = ""): 
 
         self.__gridbin__ = gridbin
@@ -43,17 +44,27 @@ class run_thread_mif(QThread):
         self.__secondmol2file__ = secondmol2file
         self.__secondweightsset__ = secondweightsset
 
-        self.__stepval__ = stepval
-        self.__deltaval__ = deltaval
+        self.__stepval__ = float(stepval)
+        self.__deltaval__ = float(deltaval)
         self.__workdir__ = workdir
 
         self.__progress__ = progress
+
+        self.__minimaselection__ = float(minimaselection)
 
     def run (self):
 
         self.count_changed.emit(0)
 
         self.__progress__.set_label("Running first set of molecules")
+
+        energy, xmin, ymin, zmin = mifs.compute_grid_mean_field (self.__firstmol2file__, \
+          self.__stepval__ , self.__deltaval__, self.__probe__, \
+          self.__fixpdbin__ , self.__gridbin__ , self.__obabelbin__ , \
+          True, False)
+        
+        mifs.get_points(energy, self.__stepval__, xmin, ymin, zmin, self.__axis__, \
+            self.__minimaselection__)
 
         self.count_changed.emit(100)
 

@@ -159,6 +159,7 @@ class main_window(QtWidgets.QMainWindow):
             #exportdx = self.__runapbs_dialog__.exportdxcheckbox.isChecked()
             axis = self.__runmifprofiles_dialog__.axis_line.text()
             probe = self.__runmifprofiles_dialog__.probe_line.text()
+            minimaselection = self.__runmifprofiles_dialog__.minima_line.text()
             
             self.__runmifprofiles_progress_dialog__ = runnersdialog.progressdia(self)
             self.__runmifprofiles_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
@@ -171,7 +172,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__calc_mifprofiles__ = runners.run_thread_mif()
             self.__calc_mifprofiles__ .configure (self.__firstmolsset__, self.__firstmol2file__, \
                 self.__firstweightsset__, self.__secondmolsset__, self.__secondmol2file__, \
-                self.__secondweightsset__, stepval, deltaval, axis, probe, self.__workdir__, \
+                self.__secondweightsset__, stepval, deltaval, axis, probe, minimaselection, self.__workdir__, \
                 self.__runmifprofiles_progress_dialog__, self.__gridbin__ , self.__fixpdbin__ , \
                 self.__apbsbin__ , self.__obabelbin__ )
 
