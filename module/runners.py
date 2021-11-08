@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import (QDialog, QProgressBar, QPushButton, QGridLayout)
 from PyQt5.QtCore import QThread, pyqtSignal
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 import os
 import mifs
@@ -58,13 +57,18 @@ class run_thread_mif(QThread):
 
         self.__progress__.set_label("Running first set of molecules")
 
-        energy, xmin, ymin, zmin = mifs.compute_grid_mean_field (self.__firstmol2file__, \
-          self.__stepval__ , self.__deltaval__, self.__probe__, \
-          self.__fixpdbin__ , self.__gridbin__ , self.__obabelbin__ , \
-          True, False)
-        
-        mifs.get_points(energy, self.__stepval__, xmin, ymin, zmin, self.__axis__, \
-            self.__minimaselection__)
+        energy1, xmin, ymin, zmin = mifs.compute_grid_mean_field (self.__firstmolsset__ , \
+          self.__firstweightsset__, self.__firstmol2file__, self.__stepval__ , \
+          self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
+          self.__obabelbin__ , self.__workdir__,  self.count_changed, self.__progress__,\
+          0, 45, True, False)
+
+        if not self.__progress__.was_cancelled():
+            mifs.get_points(energy1, self.__stepval__, xmin, ymin, zmin, self.__axis__, \
+                self.__minimaselection__)
+
+        self.count_changed.emit(50)
+
 
         self.count_changed.emit(100)
 

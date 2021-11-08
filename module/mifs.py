@@ -1,6 +1,8 @@
 import subprocess
 import numpy
+import glob
 import os
+import re
 
 ###############################################################################
 
@@ -13,9 +15,89 @@ def ifextrm (filename):
 
 ###############################################################################
 
-def compute_grid_mean_field (filename, step, delta, \
-        probename, fixpdbin, gridbin, obabelbin, \
-            mol2pdb=True, verbose=True, savekont=False):
+def readkontfile (kontname):
+
+  lineamnt = bufcount(kontname)
+  
+  dim = (lineamnt - 1)/2
+
+  energy = numpy.empty([1,1,1], float)
+
+  if ((dim * 2) + 1) != lineamnt :
+    print("Maybe invalid kont file")
+    exit(1)
+
+  fk = open(kontname)
+
+  xsets = set()
+  ysets = set()
+  zsets = set()
+  switchtofieldm = False
+
+  nx = ny = nz = 0
+  ix = iy = iz = 0
+  for l in fk:
+
+    if (l[:5] == "Probe"):
+      switchtofieldm = True 
+      nx = len(xsets)
+      ny = len(ysets)
+      nz = len(zsets)
+      energy = numpy.arange(nx*ny*nz, dtype=float).reshape(nx, ny, nz)
+
+    else:
+      if switchtofieldm:
+        p = re.compile(r'\s+')
+        line = p.sub(' ', l)
+        line = line.lstrip()
+        line = line.rstrip()
+
+        e = float(line)
+        energy[ix, iy, iz] = e
+        #if e != 0.0:
+        #  print (ix, iy, iz, e)
+
+        # seguo la logica con cui sono scritti i kont ascii senza fare deduzioni
+        # ovviamente va migliorato
+        iy = iy + 1
+        if (iy == ny):
+          iy = 0
+          ix = ix + 1
+        
+        if (ix == nx):
+          ix = 0
+          iy = 0
+          iz = iz + 1
+
+        if (iz == nz):
+          ix = 0
+          iy = 0
+          iz = 0
+
+      else:
+        p = re.compile(r'\s+')
+        line = p.sub(' ', l)
+        line = line.lstrip()
+        line = line.rstrip()
+        n, x, y, z = line.split(" ")
+
+        xsets.add(float(x))
+        ysets.add(float(y))
+        zsets.add(float(z))
+
+  fk.close()
+
+  return energy
+
+###############################################################################
+
+def compute_grid_mean_field (mollist, weights, filename, step, delta, \
+        probename, fixpdbin, gridbin, obabelbin, workdir, \
+        progress = None, checkcancel = None, startwith = 0, tot = 100, \
+        verbose=True, savekont=False):
+
+  if progress != None:
+    progress.emit(startwith)
 
   # generate grid 
   xmin = float("inf")
@@ -24,33 +106,6 @@ def compute_grid_mean_field (filename, step, delta, \
   xmax = float("-inf")
   ymax = float("-inf")
   zmax = float("-inf")
-
-  fp = open(filename, "r")
-
-  sum = 0.0
-  weights = []
-  mollist = []
-  for l in fp:
-    sl = l.split()
-    if (len(sl) != 2):
-      print("Error in ", filename)
-      exit(1)
-    
-    weights.append(float(sl[1]))
-    sum += float(sl[1])
-
-    m = None
-    
-    if mol2pdb:
-      m = carbo.mol2atomextractor(sl[0])
-    else:
-      m = carbo.pdbatomextractor(sl[0])
-
-    mollist.extend(m)
-  
-  fp.close()
-
-  weights = [ v/sum for v in weights]
 
   for conf in mollist:
     for a in conf:
@@ -79,15 +134,6 @@ def compute_grid_mean_field (filename, step, delta, \
   zmin = zmin - delta
   zmax = zmax + delta
 
-  # to set custom ranges
-  #xmin = -42.0
-  #ymin = -28.0
-  #zmin = -42.0
-
-  #xmax = 42.0
-  #ymax = 39.0
-  #zmax = 42.
-
   if verbose:
     print("Grid will be used: ", xmin, ymin, zmin, xmax, ymax, zmax)
   
@@ -98,35 +144,43 @@ def compute_grid_mean_field (filename, step, delta, \
 
   energy = numpy.empty([1,1,1], float)
   globalindex = 0
-  fp = open(filename, "r")
-  for conf in fp:
 
-    sl = conf.split()
-    
-    ifextrm ("./"+str(globalindex)+".pdb")
+  basename = os.path.splitext(filename)[0].split("/")[-1]
+  namelist = glob.glob(workdir + "/"+basename+"*.pdb")
 
-    if mol2pdb:
-      toexe = obabelbin + " -imol2 " + sl[0] + " -opdb -O " + "./"+str(globalindex)+".pdb"
-      results  = subprocess.run(toexe, shell=True, check=True, \
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
-        universal_newlines=True)
-    else:
-      from shutil import copyfile
-      copyfile (sl[0], str(globalindex)+".pdb")
+  for name in namelist :
+    ifextrm (name)
 
+  toexe = obabelbin + " -imol2 " + filename + " -opdb -O " + workdir + "/"+basename+".pdb -m"
+  results  = subprocess.run(toexe, shell=True, check=True, \
+    stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
+    universal_newlines=True)
+
+  namelist = glob.glob(workdir + "/"+basename+"*.pdb")
+
+  for i, name in enumerate(namelist):
+
+    if checkcancel != None:
+      if checkcancel.was_cancelled():
+          return None, xmin, ymin, zmin
+
+    if verbose:
+      print("Running : ", name)
+
+    basename = os.path.splitext(name)[0].split("/")[-1]
   
     toexe = fixpdbin + " --remove-all-H2O --unkn-residue-to-grid-types --kout-out="+ \
-        str(globalindex)+".kout "+str(globalindex)+".pdb"
+        workdir + "/" + basename +".kout "+ name
     results  = subprocess.run(toexe, shell=True, check=True, \
       stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
       universal_newlines=True)
     
-    kontname = str(globalindex)+".kont"
+    kontname = basename +".kont"
   
     fg = open('grid.in','w')
     fg.write("LONT togrid.lont\n")
     fg.write("KONT "+kontname+"\n")
-    fg.write("INPT "+str(globalindex)+".kout\n")
+    fg.write("INPT "+basename+".kout\n")
     fg.write("NPLA "+str(1.0/step)+"\n")
     fg.write("TOPX "+str(xmax)+"\n")
     fg.write("TOPY "+str(ymax)+"\n")
@@ -142,8 +196,8 @@ def compute_grid_mean_field (filename, step, delta, \
       stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
       universal_newlines=True)
 
-    ifextrm ("./"+str(globalindex)+".pdb")
-    ifextrm ("./"+str(globalindex)+".kout")
+    ifextrm ("./"+basename+".pdb")
+    ifextrm ("./"+basename+".kout")
     ifextrm ("./grid.in")
     ifextrm ("./togrid.lont")
   
@@ -161,24 +215,28 @@ def compute_grid_mean_field (filename, step, delta, \
       ifextrm ("./"+kontname)
   
     if verbose:
-      print("Dealing with: ", kontname, " w: ", weights[globalindex])
+      print("Dealing with: ", kontname, " w: ", weights[i])
   
-    if  globalindex == 0:
+    if  i == 0:
       nx = lenergy.shape[0]
       ny = lenergy.shape[1]
       nz = lenergy.shape[2]
       energy = numpy.arange(nx*ny*nz, dtype=float).reshape(nx, ny, nz)
       energy = numpy.zeros([nx,ny,nz], float)
 
-    energy += weights[globalindex] * lenergy
-  
-    globalindex = globalindex + 1
+    energy += weights[i] * lenergy
+
+    if checkcancel != None:
+      if checkcancel.was_cancelled():
+          return None, xmin, ymin, zmin
+
+    if progress != None:
+      where = int(startwith + (tot * ((i+1)/len(namelist))))
+      progress.emit(where)
   
   #energy = energy / float(globalindex)
   #energytofile (energy, "mean.kont", xmin, ymin, zmin)
   
-  fp.close()
-
   """
   for i in range(energy.shape[0]):
     for j in range(energy.shape[1]):
@@ -218,7 +276,7 @@ def remove_equal(input):
 ###############################################################################
 
 def write_to_cube (mol1, mol1field, fname, xnstep, ynstep, znstep,\
-    step, xmin, ymin, zmin):
+    step, xmin, ymin, zmin, CONVERTER):
 
   opf = open(fname, "w")
 
