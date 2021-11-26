@@ -92,9 +92,11 @@ def readkontfile (kontname):
 ###############################################################################
 
 def compute_grid_mean_field (mollist, weights, filename, step, delta, \
-        probename, fixpdbin, gridbin, obabelbin, workdir, \
+        probename, fixpdbin, gridbin, obabelbin, workdirin, \
         progress = None, checkcancel = None, startwith = 0, tot = 100, \
         verbose=True, savekont=False):
+
+  workdir = workdirin + "/"
 
   if progress != None:
     progress.emit(startwith)
@@ -177,10 +179,10 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
     
     kontname = basename +".kont"
   
-    fg = open('grid.in','w')
-    fg.write("LONT togrid.lont\n")
-    fg.write("KONT "+kontname+"\n")
-    fg.write("INPT "+basename+".kout\n")
+    fg = open(workdir + 'grid.in','w')
+    fg.write("LONT "+workdir+"togrid.lont\n")
+    fg.write("KONT "+workdir+kontname+"\n")
+    fg.write("INPT "+workdir+basename+".kout\n")
     fg.write("NPLA "+str(1.0/step)+"\n")
     fg.write("TOPX "+str(xmax)+"\n")
     fg.write("TOPY "+str(ymax)+"\n")
@@ -192,17 +194,18 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
     fg.write("IEND\n")
     fg.close()
                                                                                                          
-    results  = subprocess.run(gridbin + " grid.in", shell=True, check=True, \
+    results  = subprocess.run(gridbin + " " + workdir + "grid.in", \
+      shell=True, check=True, \
       stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
       universal_newlines=True)
 
-    ifextrm ("./"+basename+".pdb")
-    ifextrm ("./"+basename+".kout")
-    ifextrm ("./grid.in")
-    ifextrm ("./togrid.lont")
+    ifextrm (workdir+basename+".pdb")
+    ifextrm (workdir+basename+".kout")
+    ifextrm (workdir + "grid.in")
+    ifextrm (workdir + "togrid.lont")
   
     # read kont file
-    lenergy = readkontfile(kontname)
+    lenergy = readkontfile(workdir + kontname)
   
     if verbose:
       print("nx: ", lenergy.shape[0], " ny: ", lenergy.shape[1], \
@@ -210,7 +213,7 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
   
     if savekont:
       newname = sl[0].replace(".pdb", "") + "_" + str(globalindex) + ".kont"
-      os.rename("./"+kontname, "./" + newname )
+      os.rename(workdir+kontname, workdir + newname )
     else:
       ifextrm ("./"+kontname)
   
