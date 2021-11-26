@@ -130,6 +130,8 @@ class runmifprofilesdialog(QtWidgets.QDialog):
         self.minima_line.move(20, 20)
         self.minima_line.resize(280,40)
 
+        self.kontcheckbox = QtWidgets.QCheckBox("Save Kont files", self)
+
         self.grid = QtWidgets.QGridLayout(self)
         
         self.grid.addWidget(stepval_label, 0, 0)
@@ -147,7 +149,9 @@ class runmifprofilesdialog(QtWidgets.QDialog):
         self.grid.addWidget(minima_label, 3, 0)
         self.grid.addWidget(self.minima_line, 3, 1)
 
-        self.grid.addWidget(self.okbutton, 4, 2)
+        self.grid.addWidget(self.kontcheckbox, 4, 1)
+
+        self.grid.addWidget(self.okbutton, 5, 2)
 
     def run(self):
 

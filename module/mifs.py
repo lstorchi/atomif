@@ -15,6 +15,42 @@ def ifextrm (filename):
 
 ###############################################################################
 
+def energytofile (energy, name, botx, boty, botz, STEPVAL, verbose):
+
+  ifextrm(name)
+
+  opf = open(name, "w")
+
+  nx = energy.shape[0]
+  ny = energy.shape[1]
+  nz = energy.shape[2]
+
+  if verbose:
+    print("Writing final kont... ")
+    print("nx: ", nx, " ny: ", ny, " nz: ", nz)
+
+  counter = 1
+  for i in range(0, nz):
+    z = botz + i * (1.0/STEPVAL)
+    for j in range(0, nx):
+      x = botx + j * (1.0/STEPVAL)
+      for k in range(0, ny):
+        y = boty + k * (1.0/STEPVAL)
+        opf.write(str(counter) + " " + str(x) +  " " + \
+            str(y) + " " + str(z) + "\n")
+        counter = counter + 1
+  
+  opf.write("Probe: XXX\n")
+  
+  for i in range(0, nz):
+    for j in range(0, nx):
+      for k in range(0, ny):
+        opf.write(str(energy[j, k, i]) + "\n")
+
+  opf.close()
+
+###############################################################################
+
 def readkontfile (kontname):
 
   lineamnt = bufcount(kontname)
@@ -159,7 +195,8 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
     universal_newlines=True)
 
   namelist = glob.glob(workdir + "/"+basename+"*.pdb")
-
+  
+  globalindex = 0
   for i, name in enumerate(namelist):
 
     if checkcancel != None:
@@ -211,11 +248,8 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
       print("nx: ", lenergy.shape[0], " ny: ", lenergy.shape[1], \
         " nz: ", lenergy.shape[2])
   
-    if savekont:
-      newname = sl[0].replace(".pdb", "") + "_" + str(globalindex) + ".kont"
-      os.rename(workdir+kontname, workdir + newname )
-    else:
-      ifextrm ("./"+kontname)
+    if not savekont:
+      ifextrm (workdir + kontname)
   
     if verbose:
       print("Dealing with: ", kontname, " w: ", weights[i])
@@ -227,6 +261,7 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
       energy = numpy.arange(nx*ny*nz, dtype=float).reshape(nx, ny, nz)
       energy = numpy.zeros([nx,ny,nz], float)
 
+    globalindex += 1
     energy += weights[i] * lenergy
 
     if checkcancel != None:
@@ -237,8 +272,11 @@ def compute_grid_mean_field (mollist, weights, filename, step, delta, \
       where = int(startwith + (tot * ((i+1)/len(namelist))))
       progress.emit(where)
   
-  #energy = energy / float(globalindex)
-  #energytofile (energy, "mean.kont", xmin, ymin, zmin)
+  energy = energy / float(globalindex)
+  if savekont:
+    basename = os.path.splitext(filename)[0].split("/")[-1]
+    energytofile (energy, workdir + basename + "_mean.kont", xmin, ymin, zmin, \
+      step, verbose)
   
   """
   for i in range(energy.shape[0]):
@@ -344,7 +382,7 @@ def return_metric (ix, x, iy, y, iz, z, xyzval_to_ixyz_map, \
 ###############################################################################
 
 def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
-  minimaselection=0.0):
+  minimaselection=0.0, verbose=False):
 
   xsets = set()
   ysets = set()
@@ -414,6 +452,8 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
   #print("           dy: {:.3f}".format(dy))
   #print("           dz: {:.3f}".format(dz))
 
+  results = []
+
   if axis == "x":
     for ix in range(0, nx):
       x = xmin + float(ix) * (STEPVAL)
@@ -437,8 +477,11 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
       if count > 0:
         countd = count
 
-      print("X: %10.5f "%(x), " %5d %5d %10.5f %10.5f"%( \
-        countlower, count, sume, sume/float(countd)))
+      results.append((x, countlower, count, sume, sume/float(countd)))
+
+      if verbose:
+        print("X: %10.5f "%(x), " %5d %5d %10.5f %10.5f"%( \
+          countlower, count, sume, sume/float(countd)))
   elif axis == "y":
     for iy in range(0, ny):
       y = ymin + float(iy) * (STEPVAL)
@@ -462,8 +505,11 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
       if count > 0:
         countd = count
 
-      print("Y: %10.5f "%(y), " %5d %5d %10.5f %10.5f"%( \
-        countlower, count, sume, sume/float(countd)))
+      results.append((y, countlower, count, sume, sume/float(countd)))
+
+      if verbose:
+        print("Y: %10.5f "%(y), " %5d %5d %10.5f %10.5f"%( \
+          countlower, count, sume, sume/float(countd)))
   elif axis == "z":
     for iz in range(0, nz):
       z = zmin + float(iz) * (STEPVAL)
@@ -487,7 +533,12 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
       if count > 0:
         countd = count
 
-      print("Z: %10.5f "%(z), " %5d %5d %10.5f %10.5f"%( \
-        countlower, count, sume, sume/float(countd)))
+      results.append((z, countlower, count, sume, sume/float(countd)))
+
+      if verbose:
+        print("Z: %10.5f "%(z), " %5d %5d %10.5f %10.5f"%( \
+          countlower, count, sume, sume/float(countd)))
+
+      return results
 
 ###############################################################################

@@ -24,8 +24,11 @@ class run_thread_mif(QThread):
     def configure (self, \
         firstmolsset, firstmol2file, firstweightsset, \
         secondmolsset, secondmol2file, secondweightsset, \
-        stepval, deltaval, axis, probe, minimaselection, workdir, progress,
-        gridbin = "", fixpdbin = "", apbsbin = "", obabelbin = ""): 
+        stepval, deltaval, axis, probe, minimaselection, \
+        workdir, progress, savekont, gridbin = "", fixpdbin = "", \
+        apbsbin = "", obabelbin = ""): 
+
+        self.__savekont__ = savekont
 
         self.__gridbin__ = gridbin
         self.__fixpdbin__ = fixpdbin
@@ -53,22 +56,33 @@ class run_thread_mif(QThread):
 
     def run (self):
 
+        verbose = True
+
         self.count_changed.emit(0)
 
         self.__progress__.set_label("Running first set of molecules")
 
-        energy1, xmin, ymin, zmin = mifs.compute_grid_mean_field (self.__firstmolsset__ , \
+        energy1, xmin1, ymin1, zmin1 = mifs.compute_grid_mean_field (self.__firstmolsset__ , \
           self.__firstweightsset__, self.__firstmol2file__, self.__stepval__ , \
           self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
-          self.__obabelbin__ , self.__workdir__,  self.count_changed, self.__progress__,\
-          0, 45, True, False)
+          self.__obabelbin__ , self.__workdir__,  self.count_changed, \
+          self.__progress__ , 0, 45, verbose, self.__savekont__ )
 
         if not self.__progress__.was_cancelled():
-            mifs.get_points(energy1, self.__stepval__, xmin, ymin, zmin, self.__axis__, \
-                self.__minimaselection__)
+            mifs.get_points(energy1, self.__stepval__, xmin1, ymin1, zmin1, self.__axis__, \
+                self.__minimaselection__, verbose)
 
         self.count_changed.emit(50)
 
+        energy2, xmin2, ymin2, zmin2 = mifs.compute_grid_mean_field (self.__secondmolsset__ , \
+          self.__secondweightsset__ , self.__secondmol2file__, self.__stepval__ , \
+          self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
+          self.__obabelbin__ , self.__workdir__,  self.count_changed, \
+          self.__progress__ , 50, 45, verbose, self.__savekont__ )
+
+        if not self.__progress__.was_cancelled():
+            mifs.get_points(energy2, self.__stepval__, xmin2, ymin2, zmin2, self.__axis__, \
+                self.__minimaselection__, verbose)
 
         self.count_changed.emit(100)
 

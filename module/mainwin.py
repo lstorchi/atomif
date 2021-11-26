@@ -173,8 +173,8 @@ class main_window(QtWidgets.QMainWindow):
             self.__calc_mifprofiles__ .configure (self.__firstmolsset__, self.__firstmol2file__, \
                 self.__firstweightsset__, self.__secondmolsset__, self.__secondmol2file__, \
                 self.__secondweightsset__, stepval, deltaval, axis, probe, minimaselection, self.__workdir__, \
-                self.__runmifprofiles_progress_dialog__, self.__gridbin__ , self.__fixpdbin__ , \
-                self.__apbsbin__ , self.__obabelbin__ )
+                self.__runmifprofiles_progress_dialog__, self.__runmifprofiles_dialog__.kontcheckbox.isChecked(), \
+                self.__gridbin__ , self.__fixpdbin__ , self.__apbsbin__ , self.__obabelbin__ )
 
             self.__calc_mifprofiles__.count_changed.connect(self.__runmifprofiles_progress_dialog__.on_count_changed)
             self.__calc_mifprofiles__.finished.connect(self.runmifprofiles_finished)
