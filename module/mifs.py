@@ -539,6 +539,6 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
         print("Z: %10.5f "%(z), " %5d %5d %10.5f %10.5f"%( \
           countlower, count, sume, sume/float(countd)))
 
-      return results
+  return results
 
 ###############################################################################

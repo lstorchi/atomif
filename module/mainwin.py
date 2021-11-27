@@ -265,7 +265,48 @@ class main_window(QtWidgets.QMainWindow):
         self.__runmifprofiles_progress_dialog__.close()
 
         if self.__calc_mifprofiles__.mif_is_done():
-            print("TODO")
+
+            values1, values2 = self.__calc_mifprofiles__.get_results()
+
+            xval1 = []
+            yval1 = []
+            for v in values1:
+                xval1.append(v[0])
+                yval1.append(v[3])
+
+            xval2 = []
+            yval2 = []
+            for v in values2:
+                xval2.append(v[0])
+                yval2.append(v[3])
+
+            if self.__plot_done__ :
+                self.__ax__.cla()
+                self.__canvas__.draw()
+                self.__plot_done__ = False
+            else:
+                self.__ax__ = self.__figure__.add_subplot(111)
+           
+            #self.__ax__.set_ylim([-1.0, 1.0])
+           
+            #self.__ax__.errorbar(refpoints, meanmtx, stdev,  linestyle='None', \
+            #    marker='^', label="Mean and stdev")
+            self.__ax__.plot(xval1, yval1, linestyle='--', label="First mol set")
+            
+            #self.__ax__.errorbar(refpoints, waverage, wvariance,  linestyle='None', \
+            #    marker='^', label="Weighted Mean and stdev")
+            self.__ax__.plot(xval2, yval2, linestyle='--', label="Second mol set")
+           
+            self.__ax__.legend(loc="lower left")
+           
+            self.__canvas__.draw()
+            self.__plot_done__ = True
+           
+            self.__savefile_runmifprofiles__.setEnabled(True)
+            self.__runmifprofiles__done__ = True
+           
+            self.__mifprofiles_value1__ = values1
+            self.__mifprofiles_value2__ = values2
 
 
     def runapbs_finished(self):
@@ -374,6 +415,33 @@ class main_window(QtWidgets.QMainWindow):
     def runmifprofiles_savefile(self):
 
         if self.__runmifprofiles__done__ :
+
+            name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
+
+            if (len(name) == 2):
+                if (name[0] != ""):
+          
+                    file = open(name[0],'w')
+
+                    self.__mifprofiles_value1__
+                    self.__mifprofiles_value2__
+
+                    axis = self.__runmifprofiles_dialog__.axis_line.text()
+                    file.write(self.__firstmol2file__+"\n")
+                    file.write("%13s %13s %13s %13s %13s\n"%(axis, "CountLower",  \
+                        "Count", "SumE", "AvgE"))
+                    for v in self.__mifprofiles_value1__:
+                        file.write("%+8.6e %+8.6e %+8.6e %+8.6e %+8.6e\n"%(\
+                            v[0], v[1], v[2], v[3], v[4]))
+
+                    file.write(self.__secondmol2file__+"\n")
+                    file.write("%13s %13s %13s %13s %13s\n"%(axis, "CountLower",  \
+                        "Count", "SumE", "AvgE"))
+                    for v in self.__mifprofiles_value2__:
+                        file.write("%+8.6e %+8.6e %+8.6e %+8.6e %+8.6e\n"%(\
+                            v[0], v[1], v[2], v[3], v[4]))
+          
+                    file.close()         
             return
 
     def runapbs_savefile(self):

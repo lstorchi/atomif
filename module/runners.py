@@ -21,6 +21,9 @@ class run_thread_mif(QThread):
 
         return self.__runmif_done__ 
 
+    def get_results (self):
+        return self.__values1__, self.__values2__
+
     def configure (self, \
         firstmolsset, firstmol2file, firstweightsset, \
         secondmolsset, secondmol2file, secondweightsset, \
@@ -54,6 +57,9 @@ class run_thread_mif(QThread):
 
         self.__minimaselection__ = float(minimaselection)
 
+        self.__values1__ = None
+        self.__values2__ = None
+
     def run (self):
 
         verbose = True
@@ -69,7 +75,7 @@ class run_thread_mif(QThread):
           self.__progress__ , 0, 45, verbose, self.__savekont__ )
 
         if not self.__progress__.was_cancelled():
-            mifs.get_points(energy1, self.__stepval__, xmin1, ymin1, zmin1, self.__axis__, \
+            self.__values1__ = mifs.get_points(energy1, self.__stepval__, xmin1, ymin1, zmin1, self.__axis__, \
                 self.__minimaselection__, verbose)
 
         self.count_changed.emit(50)
@@ -81,7 +87,7 @@ class run_thread_mif(QThread):
           self.__progress__ , 50, 45, verbose, self.__savekont__ )
 
         if not self.__progress__.was_cancelled():
-            mifs.get_points(energy2, self.__stepval__, xmin2, ymin2, zmin2, self.__axis__, \
+            self.__values2__ = mifs.get_points(energy2, self.__stepval__, xmin2, ymin2, zmin2, self.__axis__, \
                 self.__minimaselection__, verbose)
 
         self.count_changed.emit(100)
