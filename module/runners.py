@@ -62,7 +62,7 @@ class run_thread_mif(QThread):
 
     def run (self):
 
-        verbose = True
+        verbose = False
 
         self.count_changed.emit(0)
 
