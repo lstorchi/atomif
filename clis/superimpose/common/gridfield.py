@@ -1,8 +1,6 @@
 import scipy.spatial
 import subprocess
-import openbabel
 import numpy 
-import pybel
 import math
 import re
 import os
