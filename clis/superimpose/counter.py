@@ -55,7 +55,9 @@ def pdbatomextractor (file=None):
           na.residueid = residue.get_id()[1]
           na.atomname = a.get_name()
           na.element = a.element
-          na.radii = mendeleev.element(a.element).vdw_radius
+          if na.element == "ZN":
+            na.element = "Zn"
+          na.radii = mendeleev.element(na.element).vdw_radius
 
           mol.append(na)
           id += 1

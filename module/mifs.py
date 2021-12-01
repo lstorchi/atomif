@@ -542,3 +542,133 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
   return results
 
 ###############################################################################
+
+def read_kontfile_and_coords (kontname):
+
+  lineamnt = bufcount(kontname)
+ 
+  dim = (lineamnt - 1)/2
+ 
+  if ((dim * 2) + 1) != lineamnt :
+    print("Maybe invalid kont file")
+    exit(1)
+ 
+  fk = open(kontname)
+ 
+  xsets = set()
+  ysets = set()
+  zsets = set()
+  switchtofieldm = False
+
+  energy = numpy.empty([1,1,1], float)
+ 
+  nx = ny = nz = 0
+  ix = iy = iz = 0
+  for l in fk:
+
+    if "Probe:" in l:
+      switchtofieldm = True 
+      nx = len(xsets)
+      ny = len(ysets)
+      nz = len(zsets)
+      energy = numpy.arange(nx*ny*nz, dtype=float).reshape(nx, ny, nz)
+    
+    else:
+      if switchtofieldm:
+        p = re.compile(r'\s+')
+        line = p.sub(' ', l)
+        line = line.lstrip()
+        line = line.rstrip()
+    
+        e = float(line)
+        energy[ix, iy, iz] = e
+        #print ix, iy, iz, e
+    
+        # seguo la logica con cui sono scritti i kont ascii senza fare deduzioni
+        # ovviamente va migliorato
+        iy = iy + 1
+        if (iy == ny):
+          iy = 0
+          ix = ix + 1
+        
+        if (ix == nx):
+          ix = 0
+          iy = 0
+          iz = iz + 1
+    
+        if (iz == nz):
+          ix = 0
+          iy = 0
+          iz = 0
+    
+      else:
+        p = re.compile(r'\s+')
+        line = p.sub(' ', l)
+        line = line.lstrip()
+        line = line.rstrip()
+        n = ""
+        x = ""
+        y = ""
+        z = ""
+
+        if len(line.split(" ")) < 4:
+            n = l[:7]
+            x = l[8:16]
+            y = l[17:24]
+            z = l[25:]
+        else:
+            n, x, y, z = line.split(" ")
+    
+        xsets.add(float(x))
+        ysets.add(float(y))
+        zsets.add(float(z))
+ 
+  fk.close()
+
+  dx = sorted(xsets)[1] - sorted(xsets)[0]
+  dy = sorted(ysets)[1] - sorted(ysets)[0]
+  dz = sorted(zsets)[1] - sorted(zsets)[0]
+ 
+  botx = min(list(xsets))
+  boty = min(list(ysets))
+  botz = min(list(zsets))
+ 
+  topx = max(list(xsets))
+  topy = max(list(ysets))
+  topz = max(list(zsets))
+
+  fk = open(kontname)
+ 
+  coords = numpy.empty([nx,ny,nz], dtype=object)
+ 
+  for iz in range(nz):
+      for ix in range(nx):
+          for iy in range(ny):
+              l = fk.readline()
+              p = re.compile(r'\s+')
+              line = p.sub(' ', l)
+              line = line.lstrip()
+              line = line.rstrip()
+
+              n = ""
+              x = ""
+              y = ""
+              z = ""
+
+              if len(line.split(" ")) < 4:
+                  n = l[:7]
+                  x = l[8:16]
+                  y = l[17:24]
+                  z = l[25:]
+              else:
+                  n, x, y, z = line.split(" ")
+
+              coords[ix, iy, iz] = (float(x), float(y), float(z), int(n))
+
+  fk.close()
+ 
+ 
+  return energy, coords, \
+          botx, boty, botz, topx, topy, topz, dx, dy, dz, nx, ny, nz
+
+###############################################################################
