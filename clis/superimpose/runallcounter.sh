@@ -47,4 +47,7 @@ for name in $(cat names.txt); do
   python counter.py ./ligands/"$name"_LR-ligand.kont ./proteins/"$name"_protein.pdb >> ligandvsprto.csv
 
   python fieldvsfield.py ./proteins/"$name"_protein.kont ./ligands/"$name"_LR-ligand.kont >> fieldvsfield.csv
+
+  python3 main.py  ./ligands/"$name"_LR-ligand.kont ./proteins/"$name"_protein.pdb > "$name"_ligandkont_vs_protein.csv
+  python3 main.py  ./proteins/"$name"_protein.kont ./ligands/"$name"_LR-ligand.pdb  > "$name"_proteinkont_vs_ligand.csv
 done
