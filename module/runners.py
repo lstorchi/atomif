@@ -9,6 +9,76 @@ import fields
 TYPEOFRUNCOULOMB = 1
 TYPEOFRUNAPBS = 2
 
+class run_thread_mifinteraction(QThread):
+    """
+    Runs a counter thread.
+    """
+    count_changed = pyqtSignal(int)
+
+    __runmif_done__ = False
+
+    def mif_is_done (self):
+
+        return self.__runmif_done__ 
+
+    def get_results (self):
+        return self.__values1__, self.__values2__
+
+    def configure (self, \
+        firstmolsset, firstmol2file, firstweightsset, \
+        secondmolsset, secondmol2file, secondweightsset, \
+        stepval, deltaval, probe, minimaselection, \
+        workdir, progress, savekont, gridbin = "", fixpdbin = "", \
+        apbsbin = "", obabelbin = ""): 
+
+        self.__savekont__ = savekont
+
+        self.__gridbin__ = gridbin
+        self.__fixpdbin__ = fixpdbin
+        self.__apbsbin__ = apbsbin
+        self.__obabelbin__ = obabelbin
+
+        self.__probe__ = probe
+
+        self.__firstmolsset__ = firstmolsset
+        self.__firstmol2file__ = firstmol2file
+        self.__firstweightsset__ = firstweightsset
+
+        self.__secondmolsset__ = secondmolsset
+        self.__secondmol2file__ = secondmol2file
+        self.__secondweightsset__ = secondweightsset
+
+        self.__stepval__ = float(stepval)
+        self.__deltaval__ = float(deltaval)
+        self.__workdir__ = workdir
+
+        self.__progress__ = progress
+
+        self.__minimaselection__ = float(minimaselection)
+
+        self.__values1__ = None
+        self.__values2__ = None
+
+    def run (self):
+
+        verbose = False
+
+        self.count_changed.emit(0)
+
+        self.__progress__.set_label("Running first set of molecules")
+
+        energy1, xmin1, ymin1, zmin1 = mifs.compute_grid_mean_field (self.__firstmolsset__ , \
+          self.__firstweightsset__, self.__firstmol2file__, self.__stepval__ , \
+          self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
+          self.__obabelbin__ , self.__workdir__,  self.count_changed, \
+          self.__progress__ , 0, 45, verbose, self.__savekont__ )
+
+        # TODO
+
+        self.count_changed.emit(100)
+
+        self.__runmif_done__ = True
+
 class run_thread_mif(QThread):
     """
     Runs a counter thread.

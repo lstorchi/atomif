@@ -27,7 +27,9 @@ class main_window(QtWidgets.QMainWindow):
         self.__runapbs_weights__ = None
         self.__runapbs_pweights__ = None
 
-        self.__runmifprofiles__done__ = False
+        self.__runmifprofiles_done__ = False
+
+        self.__runmifinteraction_done__ = False
 
         self.__workdir__ = "./"
         self.__gridbin__ = "./grid"
@@ -72,6 +74,11 @@ class main_window(QtWidgets.QMainWindow):
         self.__savefile_runmifprofiles__.triggered.connect(self.runmifprofiles_savefile)
         self.__savefile_runmifprofiles__.setEnabled(False)
 
+        self.__savefile_runmifinteraction__ = QtWidgets.QAction(QtGui.QIcon("icons/save.png"), "Save MIF Interaction file", self)
+        self.__savefile_runmifinteraction__.setStatusTip("Save file MIF Interaction")
+        self.__savefile_runmifinteraction__.triggered.connect(self.runmifinteraction_savefile)
+        self.__savefile_runmifinteraction__.setEnabled(False)
+
         sep = QtWidgets.QAction(self)
         sep.setSeparator(True)
 
@@ -85,17 +92,21 @@ class main_window(QtWidgets.QMainWindow):
         config.setStatusTip("Configure")
         config.triggered.connect(self.configure)
 
-        runcu = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run Coulomb Carbo Index", self)
-        runcu.setStatusTip("Run the Carbo index using the Coulomb's law ")
-        runcu.triggered.connect(self.runcu)      
+        runcu_ico = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run Coulomb Carbo Index", self)
+        runcu_ico.setStatusTip("Run the Carbo index using the Coulomb's law ")
+        runcu_ico.triggered.connect(self.runcu)      
 
-        runapbs = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run APBS Carbo Index", self)
-        runapbs.setStatusTip("Run the Carbo index using APBS ")
-        runapbs.triggered.connect(self.runapbs)      
+        runapbs_ico = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run APBS Carbo Index", self)
+        runapbs_ico.setStatusTip("Run the Carbo index using APBS ")
+        runapbs_ico.triggered.connect(self.runapbs)      
 
-        runmifprofiles = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run MIF Profiles", self)
-        runmifprofiles.setStatusTip("Run the MIF profiles ")
-        runmifprofiles.triggered.connect(self.runmifprofiles)      
+        runmifprofiles_ico = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run MIF Profiles", self)
+        runmifprofiles_ico.setStatusTip("Run the MIF profiles ")
+        runmifprofiles_ico.triggered.connect(self.runmifprofiles)      
+       
+        runmifinteraction_ico = QtWidgets.QAction(QtGui.QIcon("icons/cancel.png"), "Run MIF Interaction", self)
+        runmifinteraction_ico.setStatusTip("Run the MIF Interaction procedure ")
+        runmifinteraction_ico.triggered.connect(self.runmifinteraction)      
 
         self.statusBar().show()
 
@@ -107,6 +118,7 @@ class main_window(QtWidgets.QMainWindow):
         file.addAction(self.__savefile_runcu__)
         file.addAction(self.__savefile_runapbs__) 
         file.addAction(self.__savefile_runmifprofiles__)
+        file.addAction(self.__savefile_runmifinteraction__)
         file.addAction(sep)
         file.addAction(quit)
 
@@ -114,9 +126,10 @@ class main_window(QtWidgets.QMainWindow):
         edit.addAction(config)
 
         run = menubar.addMenu('&Compute')
-        run.addAction(runcu)
-        run.addAction(runapbs)
-        run.addAction(runmifprofiles)
+        run.addAction(runcu_ico)
+        run.addAction(runapbs_ico)
+        run.addAction(runmifprofiles_ico)
+        run.addAction(runmifinteraction_ico)
 
         help = menubar.addMenu('&Help')
 
@@ -138,6 +151,7 @@ class main_window(QtWidgets.QMainWindow):
         self.__runcu_dialog__ = runnersdialog.runcudialog(self)
         self.__runapbs_dialog__ = runnersdialog.runapbsdialog(self)
         self.__runmifprofiles_dialog__ = runnersdialog.runmifprofilesdialog(self)
+        self.__runmifinteraction_dialog__ = runnersdialog.runmifinteractiondialog(self)
 
         self.__workdir__ = self.__configure_dialog__.workdir_line.text()
         self.__gridbin__ = self.__configure_dialog__.gridbin_line.text()
@@ -145,9 +159,44 @@ class main_window(QtWidgets.QMainWindow):
         self.__apbsbin__ = self.__configure_dialog__.apbsbin_line.text()
         self.__obabelbin__ = self.__configure_dialog__.obabelbin_line.text()
 
+    def runmifinteraction (self):
+        self.__savefile_runmifinteraction__.setEnabled(False)
+        self.__runmifinteraction_done__ = False
+
+        if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
+            self.__runmifprofiles_dialog__.setWindowTitle("Run MIF profiles")
+            
+            self.__runmifinteraction_dialog__.exec()
+
+            stepval = float(self.__runmifinteraction_dialog__.stepval_line.text())
+            deltaval = float(self.__runmifinteraction_dialog__.deltaval_line.text())
+            probe = self.__runmifinteraction_dialog__.probe_line.text()
+            minimaselection = self.__runmifinteraction_dialog__.minima_line.text()
+            
+            self.__runmifinteraction_progress_dialog__ = runnersdialog.progressdia(self)
+            self.__runmifinteraction_progress_dialog__.setWindowModality(QtCore.Qt.WindowModal)
+           
+            self.__runmifinteraction_progress_dialog__.show()
+            self.__runmifinteraction_progress_dialog__.set_value(0)
+            self.__runmifinteraction_progress_dialog__.set_title("Run Grid Interaction")
+            self.__runmifinteraction_progress_dialog__.cancel_signal.connect(self.runmifinteraction_cancel)
+
+            self.__calc_mifinteraction__ = runners.run_thread_mifinteraction()
+            self.__calc_mifinteraction__ .configure (self.__firstmolsset__, self.__firstmol2file__, \
+                self.__firstweightsset__, self.__secondmolsset__, self.__secondmol2file__, \
+                self.__secondweightsset__, stepval, deltaval, probe, minimaselection, self.__workdir__, \
+                self.__runmifinteraction_progress_dialog__, self.__runmifinteraction_dialog__.kontcheckbox.isChecked(), \
+                self.__gridbin__ , self.__fixpdbin__ , self.__apbsbin__ , self.__obabelbin__ )
+
+            self.__calc_mifinteraction__.count_changed.connect(self.__runmifinteraction_progress_dialog__.on_count_changed)
+            self.__calc_mifinteraction__.finished.connect(self.runmifinteraction_finished)
+            self.__calc_mifinteraction__.start()
+ 
+            return
+
     def runmifprofiles (self):
         self.__savefile_runmifprofiles__.setEnabled(False)
-        self.__runmifprofiles__done__ = False
+        self.__runmifprofiles_done__ = False
 
         if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
             self.__runmifprofiles_dialog__.setWindowTitle("Run MIF profiles")
@@ -259,6 +308,16 @@ class main_window(QtWidgets.QMainWindow):
                     "WARNING", \
                         "No molecules have been specified ") 
 
+    def runmifinteraction_finished(self):
+        self.__calc_mifinteraction__.wait()
+
+        self.__runmifinteraction_progress_dialog__.close()
+
+        if self.__calc_mifinteraction__.mif_is_done():
+            pass
+
+        return
+
     def runmifprofiles_finished(self):
         self.__calc_mifprofiles__.wait()
 
@@ -303,7 +362,7 @@ class main_window(QtWidgets.QMainWindow):
             self.__plot_done__ = True
            
             self.__savefile_runmifprofiles__.setEnabled(True)
-            self.__runmifprofiles__done__ = True
+            self.__runmifprofiles_done__ = True
            
             self.__mifprofiles_value1__ = values1
             self.__mifprofiles_value2__ = values2
@@ -412,9 +471,13 @@ class main_window(QtWidgets.QMainWindow):
             self.__runcu_weights__ = weights
             self.__runcu_pweights__ = pweights
 
+    def runmifinteraction_savefile(self):
+
+         pass
+
     def runmifprofiles_savefile(self):
 
-        if self.__runmifprofiles__done__ :
+        if self.__runmifprofiles_done__ :
 
             name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
 
@@ -507,6 +570,16 @@ class main_window(QtWidgets.QMainWindow):
                                 wvariance[idx], pwaverage[idx], pwvariance[idx] ))
           
                     file.close()         
+
+    def runmifinteraction_cancel(self):
+        
+        self.__calc_mifinteraction__.m_abort = True
+        if not self.__calc_mifinteraction__.wait(5000):
+            self.__calc_mifinteraction__.terminate()
+            self.__calc_mifinteraction__.quit()
+            self.__calc_mifinteraction__.wait()
+
+        self.__runmifinteraction_progress_dialog__.close()
 
     def runmifprofiles_cancel(self):
 
