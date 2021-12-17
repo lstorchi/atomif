@@ -24,30 +24,36 @@ for name in $(cat names.txt); do
 
   cd ./ligands
 
-  obabel -ixyz "$name"_LR-ligand.xyz -opdb -O "$name"_LR-ligand.pdb
-  obabel -ixyz "$name"_LR-ligand.xyz -omol2 -O "$name"_LR-ligand.mol2
-  ./mol2kout "$name"_LR-ligand.mol2
-  ./kouttokont "$name"_LR-ligand.kout DRY > "$name"_LR-ligand.kont 
-  ./k2xplor  "$name"_LR-ligand.kont 
+  obabel -ixyz "$name"_L_opt-frozen.xyz -opdb -O "$name"_L_opt-frozen.pdb
+  obabel -ixyz "$name"_L_opt-frozen.xyz -omol2 -O "$name"_L_opt-frozen.mol2
+  ./mol2kout "$name"_L_opt-frozen.mol2
+  ./kouttokont "$name"_L_opt-frozen.kout DRY > "$name"_L_opt-frozen.kont 
+  ./k2xplor  "$name"_L_opt-frozen.kont 
 
   cd ../
 
-  export BOXLIM=$(python extractbox.py ./ligands/"$name"_LR-ligand.kont)
+  export BOXLIM=$(python extractbox.py ./ligands/"$name"_L_opt-frozen.kont)
   echo $BOXLIM
 
   cd ./proteins
 
-  ./fixpdb --kout-out="$name"_protein.kout "$name"_protein.pdb 
-  ./kouttokont "$name"_protein.kout DRY > "$name"_protein.kont 
-  ./k2xplor  "$name"_protein.kont 
+  ./fixpdb --kout-out="$name"_R_opt-frozen.kout "$name"_R_opt-frozen.pdb 
+  ./kouttokont "$name"_R_opt-frozen.kout DRY > "$name"_R_opt-frozen.kont 
+  ./k2xplor  "$name"_R_opt-frozen.kont 
   
   cd ../
 
-  python counter.py ./proteins/"$name"_protein.kont ./ligands/"$name"_LR-ligand.pdb >> protvsligand.csv
-  python counter.py ./ligands/"$name"_LR-ligand.kont ./proteins/"$name"_protein.pdb >> ligandvsprto.csv
+  python counter.py ./proteins/"$name"_R_opt-frozen.kont ./ligands/"$name"_L_opt-frozen.pdb >> protvsligand.csv
+  python counter.py ./ligands/"$name"_L_opt-frozen.kont ./proteins/"$name"_R_opt-frozen.pdb >> ligandvsprto.csv
 
-  python fieldvsfield.py ./proteins/"$name"_protein.kont ./ligands/"$name"_LR-ligand.kont >> fieldvsfield.csv
+  python fieldvsfield.py ./proteins/"$name"_R_opt-frozen.kont ./ligands/"$name"_L_opt-frozen.kont >> fieldvsfield.csv
 
-  python3 main.py  ./ligands/"$name"_LR-ligand.kont ./proteins/"$name"_protein.pdb > "$name"_ligandkont_vs_protein.csv
-  python3 main.py  ./proteins/"$name"_protein.kont ./ligands/"$name"_LR-ligand.pdb  > "$name"_proteinkont_vs_ligand.csv
+  python3 main.py  ./ligands/"$name"_L_opt-frozen.kont ./proteins/"$name"_R_opt-frozen.pdb > "$name"_ligandkont_vs_R_opt-frozen.csv
+  python3 main.py  ./proteins/"$name"_R_opt-frozen.kont ./ligands/"$name"_L_opt-frozen.pdb  > "$name"_R_opt-frozenkont_vs_ligand.csv
+done
+
+for name in $(cat names.txt); do 
+  >&2 echo "$name" 
+  python3 main.py  ./ligands/"$name"_L_opt-frozen.kont ./proteins/"$name"_R_opt-frozen.pdb > "$name"_ligandkont_vs_R_opt-frozen.csv
+  python3 main.py  ./proteins/"$name"_R_opt-frozen.kont ./ligands/"$name"_L_opt-frozen.pdb  > "$name"_R_opt-frozenkont_vs_ligand.csv      
 done

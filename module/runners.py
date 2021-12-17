@@ -71,9 +71,18 @@ class run_thread_mifinteraction(QThread):
           self.__firstweightsset__, self.__firstmol2file__, self.__stepval__ , \
           self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
           self.__obabelbin__ , self.__workdir__,  self.count_changed, \
-          self.__progress__ , 0, 45, verbose, self.__savekont__ )
+          self.__progress__ , 0, 25, verbose, self.__savekont__ )
 
         # TODO
+
+        self.__progress__.set_label("Running second set of molecules")
+
+        energy2, xmin2, ymin2, zmin2 = mifs.compute_grid_mean_field (self.__secondmolsset__ , \
+          self.__secondweightsset__, self.__secondmol2file__, self.__stepval__ , \
+          self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
+          self.__obabelbin__ , self.__workdir__,  self.count_changed, \
+          self.__progress__ , 25, 50, verbose, self.__savekont__ )
+
 
         self.count_changed.emit(100)
 
