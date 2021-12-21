@@ -2,9 +2,13 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5 import QtWidgets
 
 import os
+import uuid
 import mifs
 import carbo
 import fields
+import atomiffileio
+
+from clis.common.gridfield import ifextrm
 
 TYPEOFRUNCOULOMB = 1
 TYPEOFRUNAPBS = 2
@@ -67,13 +71,13 @@ class run_thread_mifinteraction(QThread):
 
         self.__progress__.set_label("Running first set of molecules")
 
+        # easiest approch save and reread kont
+
         energy1, xmin1, ymin1, zmin1 = mifs.compute_grid_mean_field (self.__firstmolsset__ , \
           self.__firstweightsset__, self.__firstmol2file__, self.__stepval__ , \
           self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
           self.__obabelbin__ , self.__workdir__,  self.count_changed, \
           self.__progress__ , 0, 25, verbose, self.__savekont__ )
-
-        # TODO
 
         self.__progress__.set_label("Running second set of molecules")
 
@@ -81,8 +85,36 @@ class run_thread_mifinteraction(QThread):
           self.__secondweightsset__, self.__secondmol2file__, self.__stepval__ , \
           self.__deltaval__, self.__probe__, self.__fixpdbin__ , self.__gridbin__ , \
           self.__obabelbin__ , self.__workdir__,  self.count_changed, \
-          self.__progress__ , 25, 50, verbose, self.__savekont__ )
+          self.__progress__ , 25, 25, verbose, self.__savekont__ )
 
+        self.__progress__.set_label("Running comparison")
+        
+        kontfilename =  self.__workdir__ + str(uuid.uuid4()) + "_mean.kont"
+        mifs.energytofile (energy1, kontfilename, xmin1, ymin1, zmin1, \
+            self.__stepval__, False)
+        energy1, energy1_coords, \
+            _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _  \
+                = mifs.read_kontfile_and_coords (kontfilename)
+        ifextrm(kontfilename)
+
+        kontfilename =  self.__workdir__ + str(uuid.uuid4()) + "_mean.kont"
+        mifs.energytofile (energy2, kontfilename, xmin2, ymin2, zmin2, \
+            self.__stepval__, False)
+        energy2, energy2_coords, \
+            _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _  \
+                = mifs.read_kontfile_and_coords (kontfilename)
+        ifextrm(kontfilename)
+
+        self.__progress__.set_label("Reading atomic radii")
+
+        file1radii = atomiffileio.mol2atomextractor(self.__firstmol2file__, setradii=True)
+        if self.__progress__.was_cancelled():
+            return
+        self.count_changed.emit(52)
+        file2radii = atomiffileio.mol2atomextractor(self.__secondmol2file__, setradii=True)
+        if self.__progress__.was_cancelled():
+            return
+        self.count_changed.emit(55)
 
         self.count_changed.emit(100)
 
