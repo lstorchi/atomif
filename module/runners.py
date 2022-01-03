@@ -22,11 +22,10 @@ class run_thread_mifinteraction(QThread):
     __runmif_done__ = False
 
     def mif_is_done (self):
-
         return self.__runmif_done__ 
 
     def get_results (self):
-        return self.__values1__, self.__values2__
+        return self.__file1vsenergy2__, self.__file2vsenergy1__
 
     def configure (self, \
         firstmolsset, firstmol2file, firstweightsset, \
@@ -60,8 +59,8 @@ class run_thread_mifinteraction(QThread):
 
         self.__minimaselection__ = float(minimaselection)
 
-        self.__values1__ = None
-        self.__values2__ = None
+        self.__file1vsenergy2__ = None
+        self.__file2vsenergy1__ = None
 
     def run (self):
 
@@ -115,6 +114,18 @@ class run_thread_mifinteraction(QThread):
         if self.__progress__.was_cancelled():
             return
         self.count_changed.emit(55)
+
+        self.__progress__.set_label("Compare File one and second MIF")
+
+        self.__file1vsenergy2__ = mifs.get_mifatomsintesect (file1radii, energy2, energy2_coords, \
+            self.count_changed, self.__progress__ , 55, 22, \
+                ELIMIT=self.__minimaselection__)
+
+        self.__progress__.set_label("Compare File two and first MIF")
+
+        self.__file2vsenergy1__ = mifs.get_mifatomsintesect (file2radii, energy1, energy1_coords, \
+            self.count_changed, self.__progress__ , 77, 22, \
+                ELIMIT=self.__minimaselection__)
 
         self.count_changed.emit(100)
 

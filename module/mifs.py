@@ -672,3 +672,105 @@ def read_kontfile_and_coords (kontname):
           botx, boty, botz, topx, topy, topz, dx, dy, dz, nx, ny, nz
 
 ###############################################################################
+
+def get_mifatomsintesect (filescoord, energy, energy_coords, \
+  progress = None, checkcancel = None, startwith = 0, tot = 100,  \
+    VDW = 1.0, ELIMIT=0.0):
+  
+  if checkcancel != None:
+    if checkcancel.was_cancelled():
+      return None
+
+  results = []
+
+  for i, mol in enumerate(filescoord):
+
+    if checkcancel != None:
+      if checkcancel.was_cancelled():
+        return None
+
+    coords = []
+    radii = []
+    for atom in mol:
+      coords.append(atom.coords)
+      radii.append(atom.radii)
+
+    counter = 0
+    counter_multiple = 0
+    peratom_counter = []
+    peratom_counter_multiple = []
+    
+    for ai in range(len(coords)):
+        peratom_counter.append(0)
+        peratom_counter_multiple.append(0)
+    
+    for iy in range(energy_coords.shape[1]):
+        for ix in range(energy_coords.shape[0]):
+            for iz in range(energy_coords.shape[2]):
+                x, y, z, n = energy_coords[ix, iy, iz] 
+                e = energy[ix, iy, iz]
+                
+                partialconter = 0
+                distfromatom = []
+                isnearatom = []
+                for ai in range(len(coords)):
+                    ax, ay, az = coords[ai]
+    
+                    dist = (ax-x)**2 + (ay-y)**2 + (az-z)**2 
+                    distfromatom.append(dist)
+                    isnearatom.append(0)
+    
+                    if dist < VDW*radii[ai] and e <= ELIMIT:
+                        partialconter += 1
+                        isnearatom[ai] = 1
+                        peratom_counter_multiple[ai] += 1
+    
+                counter_multiple += partialconter
+    
+                if partialconter > 1:
+                    #print partialconter
+                    partialconter = 1
+    
+                    mindistai = -1
+                    mindist = 0.0
+                    for ai in range(len(coords)):
+                        if isnearatom[ai] != 0:
+                            if mindistai < 0:
+                                mindist = distfromatom[ai]
+                                mindistai = ai
+                            else:
+                                if distfromatom[ai] < mindist:
+                                    mindist = distfromatom[ai]
+                                    mindistai = ai
+    
+                    if mindistai >= 0:
+                        peratom_counter[mindistai] += 1
+                    else:
+                        print("Error")
+                        exit(1)
+    
+                elif partialconter  == 1:
+                    for ai in range(len(coords)):
+                        if isnearatom[ai] != 0:
+                            peratom_counter[ai] += 1
+    
+                counter += partialconter
+
+    dictres = {"counter" : counter, \
+      "counter_multiple" : counter_multiple, \
+      "peratom_counter" : peratom_counter, \
+      "peratom_counter_multiple" : peratom_counter_multiple}
+
+    results.append(dictres)
+
+    if progress != None:
+      where = int(startwith + (tot * ((i+1)/len(filescoord))))
+      progress.emit(where)
+
+    if checkcancel != None:
+      if checkcancel.was_cancelled():
+        return None
+
+  return results
+
+###############################################################################

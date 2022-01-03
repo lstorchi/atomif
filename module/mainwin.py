@@ -1,4 +1,5 @@
 from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt5.QtCore import Qt
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -10,6 +11,28 @@ import options
 import runners
 import atomiffileio
 import runnersdialog
+
+class TableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            # See below for the nested-list data structure.
+            # .row() indexes into the outer list,
+            # .column() indexes into the sub-list
+            return self._data[index.row()][index.column()]
+
+    def rowCount(self, index):
+        # The length of the outer list.
+        return len(self._data)
+
+    def columnCount(self, index):
+        # The following takes the first sub-list, and returns
+        # the length (only works if all rows are an equal length)
+        return len(self._data[0])
+
 
 class main_window(QtWidgets.QMainWindow):
 
@@ -137,9 +160,12 @@ class main_window(QtWidgets.QMainWindow):
         self.__canvas__ = FigureCanvas(self.__figure__)
         self.__toolbar__ = NavigationToolbar(self.__canvas__, self)
 
+        self.__qtable__ = QtWidgets.QTableView (self)
+
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.__toolbar__)
         layout.addWidget(self.__canvas__)
+        layout.addWidget(self.__qtable__)
 
         maindialog = QtWidgets.QWidget()
         maindialog.setLayout(layout)
@@ -162,6 +188,7 @@ class main_window(QtWidgets.QMainWindow):
     def runmifinteraction (self):
         self.__savefile_runmifinteraction__.setEnabled(False)
         self.__runmifinteraction_done__ = False
+        self.__mifitecationdata__ = None
 
         if self.__firstmolsset__ != None and self.__secondmolsset__ != None:
             self.__runmifprofiles_dialog__.setWindowTitle("Run MIF profiles")
@@ -314,7 +341,83 @@ class main_window(QtWidgets.QMainWindow):
         self.__runmifinteraction_progress_dialog__.close()
 
         if self.__calc_mifinteraction__.mif_is_done():
-            pass
+
+            firstset, secondset = self.__calc_mifinteraction__.get_results()
+
+            self.__mifitecationdata__ = []
+
+            for index in range(len(firstset)):
+                 miffilename = "MIF of " + self.__secondmol2file__ 
+                 coordfilename = "Molecule " + str(index) + " of " + \
+                     self.__firstmol2file__ 
+
+                 counter = firstset[index]["counter"]
+                 counter_multiple = firstset[index]["counter_multiple"]
+                 peratom_counter = firstset[index]["peratom_counter"]          
+                 peratom_counter_multiple = firstset[index]["peratom_counter_multiple"]  
+
+                 self.__mifitecationdata__.append(\
+                     [miffilename, coordfilename, counter, counter_multiple])
+                
+                 #print(miffilename, " ", coordfilename, " ,", counter, " , " , counter_multiple)
+                
+                 sum = 0
+                 sum_multiple = 0
+                 for ai in range(len(peratom_counter_multiple)):
+                     if (peratom_counter_multiple[ai] != 0 and \
+                         peratom_counter[ai] != 0):
+                        self.__mifitecationdata__.append(["Atom", ai+1, peratom_counter_multiple[ai], 
+                          peratom_counter[ai] ])
+                     #print("atom , ", ai+1, " , ", peratom_counter_multiple[ai], " , ", \
+                     #   peratom_counter[ai])
+                     sum_multiple += peratom_counter_multiple[ai]
+                     sum += peratom_counter[ai]
+                
+                 if sum_multiple != counter_multiple:
+                     print("Error in Tot: ", sum_multiple, " vs ", counter_multiple)
+                
+                 if sum != counter:
+                     print("Error in Tot: ", sum, " vs ", counter)
+            
+            for index in range(len(secondset)):
+                 miffilename = "MIF of " + self.__firstmol2file__
+                 coordfilename = "Molecule " + str(index) + " of " + \
+                     self.__secondmol2file__
+
+                 counter = secondset[index]["counter"]
+                 counter_multiple = secondset[index]["counter_multiple"]
+                 peratom_counter = secondset[index]["peratom_counter"]          
+                 peratom_counter_multiple = secondset[index]["peratom_counter_multiple"]  
+
+                 self.__mifitecationdata__.append([miffilename, coordfilename, counter, counter_multiple])
+                
+                 #print(miffilename, " ", coordfilename, " ,", counter, " , " , counter_multiple)
+                
+                 sum = 0
+                 sum_multiple = 0
+                 for ai in range(len(peratom_counter_multiple)):
+                     if (peratom_counter_multiple[ai] != 0 and \
+                         peratom_counter[ai] != 0):
+                        self.__mifitecationdata__.append(["Atom", ai+1, peratom_counter_multiple[ai], 
+                          peratom_counter[ai] ])
+                     #print("atom , ", ai+1, " , ", peratom_counter_multiple[ai], " , ", \
+                     #   peratom_counter[ai])
+                     sum_multiple += peratom_counter_multiple[ai]
+                     sum += peratom_counter[ai]
+                
+                 if sum_multiple != counter_multiple:
+                     print("Error in Tot: ", sum_multiple, " vs ", counter_multiple)
+                
+                 if sum != counter:
+                     print("Error in Tot: ", sum, " vs ", counter)
+
+            self.__savefile_runmifinteraction__.setEnabled(True)
+
+            self.__qtable__.clearSpans()
+
+            model = TableModel(self.__mifitecationdata__)
+            self.__qtable__.setModel(model)
+            self.__runmifinteraction_done__ = True
 
         return
 
@@ -473,7 +576,21 @@ class main_window(QtWidgets.QMainWindow):
 
     def runmifinteraction_savefile(self):
 
-         pass
+        if self.__runmifinteraction_done__:
+
+            name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')
+           
+            if (len(name) == 2):
+                if (name[0] != ""):
+            
+                    file = open(name[0],'w')
+
+                    for val in self.__mifitecationdata__:
+                        file.write(str(val[0]) + " , " + str(val[1]) + \
+                            " , " + str(val[2]) + " , " + str(val[3]) + "\n")
+           
+                    file.close()         
+        return
 
     def runmifprofiles_savefile(self):
 
