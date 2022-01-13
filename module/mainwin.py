@@ -162,10 +162,13 @@ class main_window(QtWidgets.QMainWindow):
 
         self.__qtable__ = QtWidgets.QTableView (self)
 
+        splitter = QtWidgets.QSplitter(self)
+        splitter.addWidget(self.__canvas__)
+        splitter.addWidget(self.__qtable__)
+
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.__toolbar__)
-        layout.addWidget(self.__canvas__)
-        layout.addWidget(self.__qtable__)
+        layout.addWidget(splitter)
 
         maindialog = QtWidgets.QWidget()
         maindialog.setLayout(layout)
@@ -590,6 +593,7 @@ class main_window(QtWidgets.QMainWindow):
                             " , " + str(val[2]) + " , " + str(val[3]) + "\n")
            
                     file.close()         
+
         return
 
     def runmifprofiles_savefile(self):
