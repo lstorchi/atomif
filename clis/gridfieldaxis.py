@@ -182,6 +182,9 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
   #print("           dy: {:.3f}".format(dy))
   #print("           dz: {:.3f}".format(dz))
 
+  print("   %10s   %10s %10s %10s %10s"%
+          ("coords", "countLow", "count", "sumE", "Avg(SumE)"))
+
   if axis == "x":
     for ix in range(0, nx):
       x = xmin + float(ix) * (STEPVAL)
@@ -205,7 +208,7 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
       if count > 0:
         countd = count
 
-      print("X: %10.5f "%(x), " %5d %5d %10.5f %10.5f"%( \
+      print("X: %10.5f "%(x), " %10d %10d %10.5f %10.5f"%( \
         countlower, count, sume, sume/float(countd)))
   elif axis == "y":
     for iy in range(0, ny):
@@ -230,7 +233,7 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
       if count > 0:
         countd = count
 
-      print("Y: %10.5f "%(y), " %5d %5d %10.5f %10.5f"%( \
+      print("Y: %10.5f "%(y), " %10d %10d %10.5f %10.5f"%( \
         countlower, count, sume, sume/float(countd)))
   elif axis == "z":
     for iz in range(0, nz):
@@ -255,7 +258,7 @@ def get_points(energy, STEPVAL, xmin, ymin, zmin, axis="x", \
       if count > 0:
         countd = count
 
-      print("Z: %10.5f "%(z), " %5d %5d %10.5f %10.5f"%( \
+      print("Z: %10.5f "%(z), " %10d %10d %10.5f %10.5f"%( \
         countlower, count, sume, sume/float(countd)))
 
 ###############################################################################
@@ -301,7 +304,7 @@ if __name__ == "__main__":
   energy, xmin, ymin, zmin = gridfield.compute_grid_mean_field (args.file, \
           STEPVAL, DELTAVAL, probe, True, False)
 
-  #gridfield.energytofile (energy, args.output, xmin, ymin, zmin, STEPVAL)
+  gridfield.energytofile (energy, args.output, xmin, ymin, zmin, STEPVAL)
 
   minimaselection = -1.0
 

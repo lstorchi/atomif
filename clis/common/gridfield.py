@@ -112,7 +112,7 @@ def readkontfile (kontname):
 
 ###############################################################################
 
-def energytofile (energy, name, botx, boty, botz, STEPVAL):
+def energytofile (energy, name, botx, boty, botz, STEPVAL, verbose=False):
 
   ifextrm("./"+name)
 
@@ -122,8 +122,9 @@ def energytofile (energy, name, botx, boty, botz, STEPVAL):
   ny = energy.shape[1]
   nz = energy.shape[2]
 
-  print("Writing final kont... ")
-  print("nx: ", nx, " ny: ", ny, " nz: ", nz)
+  if verbose:
+     print("Writing final kont... ")
+     print("nx: ", nx, " ny: ", ny, " nz: ", nz)
 
   counter = 1
   for i in range(0, nz):
