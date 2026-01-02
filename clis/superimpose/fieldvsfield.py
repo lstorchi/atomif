@@ -27,6 +27,14 @@ energy2, energy2_coords, \
         _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _  \
         = gridfield.read_kontfile(kontfilename2)
 
+if energy1 is None:
+    print("Error in reading first kont")
+    exit(1)
+
+if energy2 is None:
+    print("Error in reading second kont")
+    exit(1)
+
 
 mapidx1 = {}
 coords1 = []
