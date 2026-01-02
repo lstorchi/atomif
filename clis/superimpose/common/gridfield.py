@@ -1,5 +1,6 @@
 import scipy.spatial
 import subprocess
+import openbabel
 import numpy 
 import math
 import re
@@ -195,12 +196,21 @@ def read_kontfile (kontname):
             z = l[25:]
         else:
             n, x, y, z = line.split(" ")
+
+        #print(n, x, y, z )
     
         xsets.add(float(x))
         ysets.add(float(y))
         zsets.add(float(z))
  
   fk.close()
+
+  if (len(xsets) == 0 ) or (len(ysets) == 0 ) or (len(zsets) == 0 ):
+    print("ERROR sets empty")
+    return None, None, \
+           None, None, None, None, None, None, \
+           None, None, None, None, None, None
+
 
   dx = sorted(xsets)[1] - sorted(xsets)[0]
   dy = sorted(ysets)[1] - sorted(ysets)[0]
