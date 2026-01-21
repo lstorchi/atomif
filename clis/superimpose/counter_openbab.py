@@ -21,6 +21,10 @@ energy, energy_coords, \
         _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _  \
         = gridfield.read_kontfile(kontfilename)
 
+if energy_coords is None:
+    print("Error reading kont file " + kontfilename)
+    exit(1)
+
 coords = []
 radii = []
 obconversion = openbabel.OBConversion()
